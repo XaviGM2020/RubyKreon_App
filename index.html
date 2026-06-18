@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FatDose — Cálculo de dosis por grasa</title>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#0f1117"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="FatDose"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <style>
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3a;
+      --accent:    #4ade80;
+      --accent2:   #22d3ee;
+      --warn:      #f97316;
+      --text:      #e8eaf0;
+      --muted:     #6b7280;
+      --radius:    12px;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── HEADER ── */
+    header {
+      width: 100%;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-pill {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header span {
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 99px;
+      margin-left: auto;
+    }
+
+    /* ── MAIN ── */
+    main {
+      width: 100%;
+      max-width: 680px;
+      padding: 40px 24px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── API KEY ── */
+    .api-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .api-row input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .api-row input:focus { border-color: var(--accent2); }
+
+    .btn-save {
+      background: var(--accent2);
+      color: #0f1117;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+
+    .btn-save:hover { opacity: .8; }
+
+    .api-status {
+      font-size: 0.75rem;
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
+    .api-status.ok  { color: var(--accent); }
+    .api-status.err { color: var(--warn); }
+
+    /* ── UPLOAD ZONE ── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.drag { border-color: var(--accent); background: rgba(74,222,128,.04); }
+
+    .drop-zone input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .drop-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+    .drop-zone p { color: var(--muted); font-size: 0.9rem; }
+    .drop-zone p strong { color: var(--text); }
+
+    /* ── PREVIEW ── */
+    #preview-wrap {
+      display: none;
+      position: relative;
+    }
+
+    #preview-wrap img {
+      width: 100%;
+      border-radius: 10px;
+      display: block;
+      max-height: 320px;
+      object-fit: cover;
+    }
+
+    .change-btn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: rgba(15,17,23,.8);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    /* ── MEDICATION CONFIG ── */
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 480px) { .grid2 { grid-template-columns: 1fr; } }
+
+    .field label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .field input, .field select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+
+    .field select option { background: var(--surface); }
+
+    /* ── ANALYZE BUTTON ── */
+    #analyze-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0f1117;
+      border: none;
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    #analyze-btn:hover:not(:disabled) { opacity: .88; }
+    #analyze-btn:active:not(:disabled) { transform: scale(.98); }
+    #analyze-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── SPINNER ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(0,0,0,.3);
+      border-top-color: #0f1117;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESULTS ── */
+    #results {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .result-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 99px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .badge-green { background: rgba(74,222,128,.15); color: var(--accent); }
+    .badge-orange { background: rgba(249,115,22,.15); color: var(--warn); }
+
+    /* Fat breakdown */
+    .fat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 400px) { .fat-grid { grid-template-columns: 1fr 1fr; } }
+
+    .fat-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+
+    .fat-item .val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .fat-item .lbl { font-size: 0.7rem; color: var(--muted); }
+
+    .total-fat .val { color: var(--accent); }
+    .saturated .val { color: var(--warn); }
+
+    /* Confidence bar */
+    .confidence-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .conf-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .conf-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width .8s ease;
+    }
+
+    .conf-label { font-size: 0.75rem; color: var(--muted); min-width: 36px; text-align: right; }
+
+    /* Dose result */
+    .dose-big {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .dose-big .number {
+      font-size: 3.5rem;
+      font-weight: 900;
+      font-family: var(--font-mono);
+      line-height: 1;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .dose-big .unit {
+      font-size: 1rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .dose-big .formula {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      margin-top: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: left;
+      line-height: 1.6;
+    }
+
+    /* AI description */
+    .ai-text {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.6;
+      background: var(--bg);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+    }
+
+    /* Disclaimer */
+    .disclaimer {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.5;
+      padding: 0 12px;
+    }
+
+    .disclaimer strong { color: var(--warn); }
+
+    /* Error card */
+    .error-card {
+      background: rgba(249,115,22,.08);
+      border: 1px solid rgba(249,115,22,.3);
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 0.85rem;
+      color: var(--warn);
+    }
+
+    /* ── INSTALL BANNER ── */
+    #install-banner {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      align-items: center;
+      gap: 14px;
+      z-index: 999;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      max-width: 340px;
+      width: calc(100% - 48px);
+    }
+
+    #install-banner p {
+      font-size: 0.82rem;
+      color: var(--text);
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    #install-banner p span {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .btn-install {
+      background: var(--accent);
+      color: #0f1117;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-install:hover { opacity: .85; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-pill">💊</div>
+  <h1>FatDose</h1>
+  <span>MVP v0.1</span>
+</header>
+
+<main>
+
+  <!-- API Key -->
+  <div class="card">
+    <div class="card-label">Configuración · API Key Google AI Studio</div>
+    <div class="api-row">
+      <input type="password" id="api-key-input" placeholder="AIza..." autocomplete="off"/>
+      <button class="btn-save" onclick="saveKey()">Guardar</button>
+    </div>
+    <div class="api-status" id="api-status">Sin clave guardada. Se almacena solo en tu navegador.</div>
+  </div>
+
+  <!-- Image upload -->
+  <div class="card">
+    <div class="card-label">Foto del plato</div>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" id="file-input" accept="image/*" onchange="handleFile(this.files[0])"/>
+      <div class="drop-icon">🍽️</div>
+      <p><strong>Sube o arrastra</strong> una foto del plato</p>
+      <p style="margin-top:6px;font-size:0.78rem;">JPG, PNG, WEBP · máx 20 MB</p>
+    </div>
+    <div id="preview-wrap">
+      <img id="preview-img" src="" alt="Plato"/>
+      <button class="change-btn" onclick="resetImage()">Cambiar</button>
+    </div>
+  </div>
+
+  <!-- Medication config -->
+  <div class="card">
+    <div class="card-label">Parámetros del medicamento</div>
+    <div class="grid2">
+      <div class="field">
+        <label>Medicamento</label>
+        <select id="med-type" onchange="updateMedInfo()">
+          <option value="kreon10">Kreon 10.000 UI</option>
+          <option value="kreon25">Kreon 25.000 UI</option>
+          <option value="kreon40">Kreon 40.000 UI</option>
+          <option value="orlistat">Orlistat</option>
+          <option value="custom">Personalizado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>UI lipasa por gramo de grasa</label>
+        <input type="number" id="dose-per-gram" value="1000" min="1" step="100"/>
+      </div>
+      <div class="field">
+        <label>Dosis máxima por toma (UI)</label>
+        <input type="number" id="max-dose" value="40000" min="1"/>
+      </div>
+      <div class="field">
+        <label>Dosis mínima por toma (UI)</label>
+        <input type="number" id="min-dose" value="10000" min="0"/>
+      </div>
+    </div>
+    <div id="med-info" style="margin-top:12px;font-size:0.78rem;color:var(--muted);line-height:1.5;"></div>
+  </div>
+
+  <!-- Analyze button -->
+  <button id="analyze-btn" onclick="analyze()" disabled>
+    <span id="btn-text">Analizar plato y calcular dosis</span>
+  </button>
+
+  <!-- Results -->
+  <div id="results">
+
+    <div class="card" id="fat-card">
+      <div class="result-header">
+        <h2>Análisis de grasas</h2>
+        <span class="badge badge-green" id="conf-badge">–</span>
+      </div>
+      <div class="fat-grid">
+        <div class="fat-item total-fat">
+          <div class="val" id="total-fat-val">–</div>
+          <div class="lbl">Grasa total (g)</div>
+        </div>
+        <div class="fat-item saturated">
+          <div class="val" id="sat-fat-val">–</div>
+          <div class="lbl">Grasa saturada (g)</div>
+        </div>
+        <div class="fat-item">
+          <div class="val" id="kcal-val">–</div>
+          <div class="lbl">Calorías estimadas</div>
+        </div>
+      </div>
+      <div class="confidence-row">
+        <span style="font-size:0.72rem;color:var(--muted)">Confianza IA</span>
+        <div class="conf-bar"><div class="conf-fill" id="conf-fill" style="width:0%"></div></div>
+        <span class="conf-label" id="conf-pct">–</span>
+      </div>
+      <div class="ai-text" id="ai-description" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="result-header">
+        <h2>Dosis calculada</h2>
+        <span class="badge badge-orange" id="dose-badge">–</span>
+      </div>
+      <div class="dose-big">
+        <div class="number" id="dose-val">–</div>
+        <div class="unit" id="dose-unit">mg</div>
+        <pre class="formula" id="dose-formula"></pre>
+      </div>
+    </div>
+
+    <p class="disclaimer">
+      <strong>⚠️ Aviso médico:</strong> Este resultado es una estimación orientativa basada en IA.
+      No sustituye el criterio de un profesional sanitario. Consulta siempre a tu médico o farmacéutico
+      antes de modificar cualquier pauta de medicación.
+    </p>
+
+  </div>
+
+  <div id="error-wrap"></div>
+
+</main>
+
+<div id="install-banner">
+  <p>📲 <span>Instalar FatDose</span> en tu Android como app</p>
+  <button class="btn-install" onclick="installApp()">Instalar</button>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────
+  let imageBase64 = null;
+  let imageMime   = 'image/jpeg';
+
+  const MED_PRESETS = {
+    kreon10: { dosePerGram: 1000, maxDose: 40000, minDose: 10000, unit: 'UI lipasa',
+               rounding: 10000,
+               info: 'Kreon 10.000 UI: cápsula = 10.000 UI de lipasa. Guías clínicas recomiendan ~1.000 UI lipasa/g de grasa. Dosis habitual: 1-4 cápsulas por comida (máx. 10.000 UI/g grasa o 100.000 UI/comida). Fuente: ficha técnica Kreon / guías ESPEN.' },
+    kreon25: { dosePerGram: 1000, maxDose: 75000, minDose: 25000, unit: 'UI lipasa',
+               rounding: 25000,
+               info: 'Kreon 25.000 UI: cápsula = 25.000 UI de lipasa. Misma pauta: ~1.000 UI/g grasa. Dosis habitual: 1-3 cápsulas por comida. Fuente: ficha técnica Kreon.' },
+    kreon40: { dosePerGram: 1000, maxDose: 120000, minDose: 40000, unit: 'UI lipasa',
+               rounding: 40000,
+               info: 'Kreon 40.000 UI: cápsula = 40.000 UI de lipasa. Indicado en insuficiencia pancreática severa. 1-2 cápsulas por comida. Fuente: ficha técnica Kreon.' },
+    orlistat: { dosePerGram: 1.5,  maxDose: 120, minDose: 30, unit: 'mg', rounding: 5,
+                info: 'Orlistat inhibe la lipasa pancreática. Dosis habitual: 120 mg con cada comida que contenga grasa. Fuente: ficha técnica Xenical/Alli.' },
+    custom:   { dosePerGram: 1000, maxDose: 75000, minDose: 10000, unit: 'UI', rounding: 1000,
+                    info: 'Introduce manualmente los parámetros de dosificación.' },
+  };
+
+  // ── API Key ────────────────────────────────────────────────────────
+  function saveKey() {
+    const k = document.getElementById('api-key-input').value.trim();
+    if (!k) return setStatus('Introduce una clave válida.', 'err');
+    localStorage.setItem('gai_key', k);
+    setStatus('✓ Clave guardada en este navegador.', 'ok');
+    checkReady();
+  }
+
+  function setStatus(msg, cls) {
+    const el = document.getElementById('api-status');
+    el.textContent = msg;
+    el.className = 'api-status ' + (cls || '');
+  }
+
+  function getKey() { return localStorage.getItem('gai_key') || ''; }
+
+  // ── On load ────────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    const k = getKey();
+    if (k) {
+      document.getElementById('api-key-input').value = k;
+      setStatus('✓ Clave cargada desde el navegador.', 'ok');
+    }
+    updateMedInfo();
+    checkReady();
+    setupDrag();
+  });
+
+  // ── Drag & drop ────────────────────────────────────────────────────
+  function setupDrag() {
+    const zone = document.getElementById('drop-zone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('drag');
+      const f = e.dataTransfer.files[0];
+      if (f) handleFile(f);
+    });
+  }
+
+  // ── Image handling ─────────────────────────────────────────────────
+  function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    imageMime = file.type;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const data = e.target.result;
+      imageBase64 = data.split(',')[1];
+      document.getElementById('preview-img').src = data;
+      document.getElementById('drop-zone').style.display  = 'none';
+      document.getElementById('preview-wrap').style.display = 'block';
+      checkReady();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function resetImage() {
+    imageBase64 = null;
+    document.getElementById('file-input').value = '';
+    document.getElementById('drop-zone').style.display    = 'block';
+    document.getElementById('preview-wrap').style.display = 'none';
+    document.getElementById('results').style.display      = 'none';
+    document.getElementById('error-wrap').innerHTML       = '';
+    checkReady();
+  }
+
+  // ── Med presets ────────────────────────────────────────────────────
+  function updateMedInfo() {
+    const med = document.getElementById('med-type').value;
+    const p   = MED_PRESETS[med];
+    document.getElementById('dose-per-gram').value = p.dosePerGram;
+    document.getElementById('max-dose').value      = p.maxDose;
+    document.getElementById('min-dose').value      = p.minDose;
+    document.getElementById('med-info').textContent = p.info;
+  }
+
+  // ── Ready check ────────────────────────────────────────────────────
+  function checkReady() {
+    const ok = !!getKey() && !!imageBase64;
+    document.getElementById('analyze-btn').disabled = !ok;
+  }
+
+  // ── Main analyze ───────────────────────────────────────────────────
+  async function analyze() {
+    const apiKey = getKey();
+    if (!apiKey || !imageBase64) return;
+
+    setLoading(true);
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('error-wrap').innerHTML  = '';
+
+    try {
+      const fatData = await estimateFat(apiKey);
+      const dose    = calcDose(fatData.totalFat);
+      showResults(fatData, dose);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Gemini API call ────────────────────────────────────────────────
+  async function estimateFat(apiKey) {
+    const prompt = `Analiza esta imagen de un plato de comida y estima su contenido nutricional.
+Responde SOLO con un objeto JSON válido, sin markdown, sin explicaciones extra. Formato exacto:
+{
+  "dish": "nombre del plato en español",
+  "totalFat": <gramos de grasa total, número>,
+  "saturatedFat": <gramos de grasa saturada, número>,
+  "calories": <calorías totales estimadas, número entero>,
+  "confidence": <confianza de 0 a 100, número entero>,
+  "description": "descripción breve del plato y por qué tiene esa cantidad de grasa (2 frases)"
+}
+Si no puedes identificar comida en la imagen, pon totalFat:0 y confidence:0.`;
+
+    const body = {
+      model: 'meta-llama/llama-4-maverick:free',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: `data:${imageMime};base64,${imageBase64}` } },
+          { type: 'text', text: prompt }
+        ]
+      }],
+      temperature: 0.2,
+      max_tokens: 512
+    };
+
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': window.location.href,
+        'X-Title': 'FatDose MVP'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Error API ${res.status}`);
+    }
+
+    const data = await res.json();
+    const raw  = data?.choices?.[0]?.message?.content || '';
+
+    // Strip markdown fences if present
+    const clean = raw.replace(/```json|```/gi, '').trim();
+
+    let parsed;
+    try { parsed = JSON.parse(clean); }
+    catch { throw new Error('La IA devolvió una respuesta inesperada. Intenta con otra imagen.'); }
+
+    if (typeof parsed.totalFat !== 'number') throw new Error('No se pudo estimar la grasa del plato.');
+    return parsed;
+  }
+
+  // ── Dose calculation ───────────────────────────────────────────────
+  function calcDose(totalFatG) {
+    const dpg     = parseFloat(document.getElementById('dose-per-gram').value) || 1000;
+    const maxD    = parseFloat(document.getElementById('max-dose').value)      || 75000;
+    const minD    = parseFloat(document.getElementById('min-dose').value)      || 0;
+    const med     = document.getElementById('med-type').value;
+    const preset  = MED_PRESETS[med] || MED_PRESETS.kreon25;
+    const unit    = preset.unit || 'UI lipasa';
+    const rounding = preset.rounding || 1000;
+
+    const raw     = totalFatG * dpg;
+    const clamped = Math.min(Math.max(raw, minD), maxD);
+    const rounded = Math.round(clamped / rounding) * rounding;
+
+    // Calculate number of capsules for Kreon
+    const capsuleSize = med === 'kreon10' ? 10000 : med === 'kreon25' ? 25000 : med === 'kreon40' ? 40000 : null;
+    const capsules = capsuleSize ? Math.ceil(rounded / capsuleSize) : null;
+
+    return { raw, clamped, rounded, dpg, maxD, minD, med, unit, rounding, capsules, capsuleSize };
+  }
+
+  // ── Render results ─────────────────────────────────────────────────
+  function showResults(fat, dose) {
+    // Fat values
+    set('total-fat-val', fat.totalFat.toFixed(1));
+    set('sat-fat-val',   (fat.saturatedFat || 0).toFixed(1));
+    set('kcal-val',      Math.round(fat.calories || 0));
+    set('ai-description', fat.description || '');
+
+    // Confidence
+    const conf = fat.confidence || 0;
+    set('conf-pct', conf + '%');
+    document.getElementById('conf-fill').style.width = conf + '%';
+    const badge = document.getElementById('conf-badge');
+    badge.textContent = fat.dish || 'Plato identificado';
+    badge.className   = 'badge ' + (conf >= 60 ? 'badge-green' : 'badge-orange');
+
+    // Dose
+    const doseLabel = dose.rounded.toLocaleString('es-ES');
+    set('dose-val', doseLabel);
+    const capsuleText = dose.capsules ? ` · ${dose.capsules} cápsula${dose.capsules !== 1 ? 's' : ''}` : '';
+    set('dose-unit', dose.unit + capsuleText);
+
+    const cappedNote = dose.clamped < dose.raw ? `\n  → limitado al máximo de ${dose.maxD.toLocaleString('es-ES')} ${dose.unit}` : '';
+    const capsuleNote = dose.capsules ? `\n  → ${dose.capsules} cápsula${dose.capsules !== 1 ? 's' : ''} de ${dose.capsuleSize.toLocaleString('es-ES')} UI` : '';
+    set('dose-formula',
+      `Fórmula:\n  ${fat.totalFat.toFixed(1)} g grasa × ${dose.dpg.toLocaleString('es-ES')} ${dose.unit}/g = ${Math.round(dose.raw).toLocaleString('es-ES')} ${dose.unit} bruto${cappedNote}\n  Redondeado → ${dose.rounded.toLocaleString('es-ES')} ${dose.unit}${capsuleNote}`
+    );
+
+    const doseBadge = document.getElementById('dose-badge');
+    doseBadge.textContent = dose.rounded >= dose.maxD ? 'Dosis máxima' : 'Dosis calculada';
+    doseBadge.className   = 'badge ' + (dose.rounded >= dose.maxD ? 'badge-orange' : 'badge-green');
+
+    document.getElementById('results').style.display = 'flex';
+  }
+
+  function showError(msg) {
+    document.getElementById('error-wrap').innerHTML =
+      `<div class="error-card">⚠️ ${msg}</div>`;
+  }
+
+  function setLoading(on) {
+    const btn  = document.getElementById('analyze-btn');
+    const text = document.getElementById('btn-text');
+    btn.disabled = on;
+    btn.innerHTML = on
+      ? '<div class="spinner"></div><span>Analizando con IA…</span>'
+      : '<span id="btn-text">Analizar plato y calcular dosis</span>';
+  }
+
+  function set(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+</script>
+<script>
+  // ── Service Worker (PWA) ───────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // sw not available (e.g. file:// protocol) — app still works
+      });
+    });
+  }
+
+  // ── Install banner ─────────────────────────────────────────────────
+  let deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('install-banner').style.display = 'flex';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('install-banner').style.display = 'none';
+    deferredPrompt = null;
+  });
+
+  function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('install-banner').style.display = 'none';
+    });
+  }
+</script>
+</body>
+</html>
