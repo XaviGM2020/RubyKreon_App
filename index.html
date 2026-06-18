@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FatDose — Cálculo de dosis por grasa</title>
+  <title>RubyKreon — Cálculo de dosis Kreon</title>
   <link rel="manifest" href="/RubyKreon_App/manifest.json"/>
   <meta name="theme-color" content="#0f1117"/>
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="FatDose"/>
+  <meta name="apple-mobile-web-app-title" content="RubyKreon"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
   <style>
     :root {
@@ -460,7 +460,7 @@
 
 <header>
   <div class="logo-pill">💊</div>
-  <h1>FatDose</h1>
+  <h1>RubyKreon</h1>
   <span>MVP v0.1</span>
 </header>
 
@@ -581,7 +581,7 @@
 </main>
 
 <div id="install-banner">
-  <p>📲 <span>Instalar FatDose</span> en tu Android como app</p>
+  <p>📲 <span>Instalar RubyKreon</span> en tu Android como app</p>
   <button class="btn-install" onclick="installApp()">Instalar</button>
 </div>
 
@@ -724,7 +724,7 @@ Responde SOLO con un objeto JSON válido, sin markdown, sin explicaciones extra.
 Si no puedes identificar comida en la imagen, pon totalFat:0 y confidence:0.`;
 
     const body = {
-      model: 'meta-llama/llama-4-maverick',
+      model: 'meta-llama/llama-4-maverick:free',
       messages: [{
         role: 'user',
         content: [
@@ -742,7 +742,7 @@ Si no puedes identificar comida en la imagen, pon totalFat:0 y confidence:0.`;
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
         'HTTP-Referer': window.location.href,
-        'X-Title': 'FatDose MVP'
+        'X-Title': 'RubyKreon MVP'
       },
       body: JSON.stringify(body)
     });

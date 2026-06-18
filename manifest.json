@@ -1,7 +1,7 @@
 {
-  "name": "FatDose — Cálculo de dosis",
-  "short_name": "FatDose",
-  "description": "Analiza la grasa de un plato con IA y calcula la dosis de Kreon",
+  "name": "RubyKreon — Dosis Kreon",
+  "short_name": "RubyKreon",
+  "description": "Analiza la grasa de tu plato con IA y calcula la dosis exacta de Kreon",
   "start_url": "/RubyKreon_App/",
   "display": "standalone",
   "background_color": "#0f1117",
