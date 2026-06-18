@@ -1,10 +1,10 @@
 const CACHE_NAME = 'fatdose-v1';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/RubyKreon_App/',
+  '/RubyKreon_App/index.html',
+  '/RubyKreon_App/manifest.json',
+  '/RubyKreon_App/icons/icon-192.png',
+  '/RubyKreon_App/icons/icon-512.png'
 ];
 
 // Install: cache core assets

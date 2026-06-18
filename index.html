@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FatDose — Cálculo de dosis por grasa</title>
-  <link rel="manifest" href="manifest.json"/>
+  <link rel="manifest" href="/RubyKreon_App/manifest.json"/>
   <meta name="theme-color" content="#0f1117"/>
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -845,7 +845,7 @@ Si no puedes identificar comida en la imagen, pon totalFat:0 y confidence:0.`;
   // ── Service Worker (PWA) ───────────────────────────────────────────
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
+      navigator.serviceWorker.register('/RubyKreon_App/sw.js').catch(() => {
         // sw not available (e.g. file:// protocol) — app still works
       });
     });
