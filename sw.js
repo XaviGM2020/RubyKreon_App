@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rubykreon-v7';
+const CACHE_NAME = 'rubykreon-v8';
 const ASSETS = [
   '/RubyKreon_App/',
   '/RubyKreon_App/index.html',
@@ -37,7 +37,7 @@ self.addEventListener('fetch', e => {
     return;
   }
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-cache' })
       .then(res => {
         if (res.ok) {
           const copy = res.clone();

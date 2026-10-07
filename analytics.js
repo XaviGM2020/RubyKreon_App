@@ -82,6 +82,8 @@
     const prescription = profile(), kind = $('meal-kind').value;
     const suggestion = suggestForMeal(kind);
     $('use-capsules').hidden = !suggestion;
+    $('capsule-breakdown').hidden = !suggestion;
+    $('capsule-breakdown').innerHTML = suggestion ? `<table><caption>Cápsulas según la pauta prescrita guardada</caption><thead><tr><th>UI de lipasa por cápsula</th><th>Cápsulas</th><th>Subtotal UI</th></tr></thead><tbody>${STRENGTHS.filter(strength => suggestion.capsules[strength] > 0).map(strength => `<tr><td>${(strength * 1000).toLocaleString('es-ES')}</td><td>${suggestion.capsules[strength]}</td><td>${(strength * 1000 * suggestion.capsules[strength]).toLocaleString('es-ES')}</td></tr>`).join('')}</tbody><tfoot><tr><th>Total UI de lipasa</th><td>${Object.values(suggestion.capsules).reduce((sum, count) => sum + count, 0)}</td><td>${suggestion.totalUI.toLocaleString('es-ES')}</td></tr></tfoot></table><p class="help">La combinación corresponde a tu pauta prescrita. La grasa estimada del plato no modifica automáticamente esa dosis.</p>` : '';
     if (!prescription) {
       $('capsule-details').textContent = 'Indica tu pauta prescrita en Analíticas → Mi pauta. Con ella calcularemos cuántas cápsulas de 10.000, 25.000 y 35.000 UI corresponden, sin que tengas que hacer la suma.';
     } else if (kind === 'snack' && prescription.snackUI == null) {
@@ -319,6 +321,11 @@
       localStorage.removeItem(PROFILE_KEY); $('regimen-form').reset();
       window.RubyDiary.clearMealAnalysis(); $('results').style.display = 'none';
       invalidate(); renderCapsules(); $('regimen-status').textContent = 'Pauta borrada. No se calcularán cápsulas hasta que registres una pauta prescrita.';
+    });
+    $('edit-meal-regimen').addEventListener('click', () => {
+      document.querySelector('[data-screen="lab"]').click();
+      const details = $('regimen-form').closest('details'); details.open = true;
+      details.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('regimen-meal').focus();
     });
     $('use-capsules').addEventListener('click', () => { const suggestion = suggestForMeal($('meal-kind').value); if (suggestion) window.RubyDiary.prepareTakenDose(suggestion.capsules); });
     renderCapsules(); renderSummary(); renderArchive();

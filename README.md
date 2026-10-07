@@ -11,7 +11,7 @@ App instalable para comidas, tomas de Kreon, deposiciones Bristol y peso. **Anal
 
 ## Comidas y cápsulas
 
-La cámara del móvil conserva el archivo recibido sin filtros. Puedes guardar descripción, gramos, ingredientes, observaciones y hasta cuatro fotos. La IA estima el contenido nutricional a partir de la descripción y los ingredientes, con fotos opcionales. Sin fotos, indica cantidades y aceite añadido; si faltan cantidades, la IA debe explicar sus supuestos y reducir la confianza.
+La cámara del móvil conserva el archivo recibido sin filtros. Puedes guardar descripción, gramos, ingredientes, observaciones y hasta cuatro fotos. El botón se habilita al escribir una descripción; si falta la clave de IA, abre Ajustes para introducirla. La IA estima el contenido nutricional a partir de la descripción y los ingredientes, con fotos opcionales. Sin fotos, indica cantidades y aceite añadido; si faltan cantidades, la IA debe explicar sus supuestos y reducir la confianza.
 
 Se han eliminado de Comida los parámetros de medicamento y la fórmula automática basada en UI/g de grasa. No se utilizan dosis de partida inventadas ni se transforma Bristol en una dosis.
 
@@ -98,3 +98,5 @@ El diario y sus modelos no sustituyen la pauta prescrita ni la valoración sanit
 ## Licencia
 
 MIT © 2024
+
+Tras el análisis de la comida, Kreon muestra el desglose de cápsulas, unidades de lipasa por cápsula, subtotales y total según la pauta prescrita guardada. El acceso «Introducir o revisar mi pauta prescrita» abre directamente el formulario. La estimación de grasa no determina ni modifica la dosis personal.
