@@ -283,13 +283,49 @@
     $('analysis-archive').innerHTML = reports.length ? reports.map(record => `<details class="analysis-archive-item"><summary>${escape(new Date(record.timestamp).toLocaleDateString('es-ES'))} · ${record.report.from} — ${record.report.to}</summary><div data-report="${record.id}"></div></details>`).join('') : '<p class="help">Los análisis que guardes aparecerán aquí y en la línea temporal.</p>';
     reports.forEach(record => renderNarrative(record.report, $('analysis-archive').querySelector(`[data-report="${record.id}"]`)));
   }
+  function renderCharts() {
+    const entries = window.RubyDiary.getEntries();
+    const days = new Map();
+    for (const record of entries) {
+      const date = window.RubyDiary.localDateTime(new Date(record.timestamp)).slice(0, 10);
+      if (!days.has(date)) days.set(date, { fat: null, kreon: null });
+      const row = days.get(date);
+      if (record.type === 'meal' && record.analysis) row.fat = (row.fat ?? 0) + record.analysis.totalFat;
+      if (record.type === 'kreon') row.kreon = (row.kreon ?? 0) + record.totalUI;
+    }
+    const daily = field => Array.from(days, ([date, values]) => ({ time: new Date(date + 'T12:00:00').getTime(), value: values[field] })).filter(p => p.value != null);
+    const events = (type, field) => entries.filter(r => r.type === type).map(r => ({ time: new Date(r.timestamp).getTime(), value: r[field] }));
+    const charts = [
+      ['fat', 'Grasa estimada por día', 'g', daily('fat'), '#20c9df'],
+      ['kreon', 'Kreon registrado por día', 'UI de lipasa', daily('kreon'), '#47d7a1'],
+      ['bristol', 'Deposiciones · Bristol', 'Tipo 1–7', events('stool', 'bristol'), '#e6b86a'],
+      ['weight', 'Peso', 'kg', events('weight', 'kg'), '#ac9bff']
+    ];
+    $('lab-screen').innerHTML = charts.map(([id, title, unit, points, color]) => {
+      points.sort((a, b) => a.time - b.time);
+      const left = 62, right = 618, top = 22, bottom = 185;
+      const values = points.map(p => p.value);
+      const low = id === 'bristol' ? 1 : id === 'weight' && values.length ? Math.min(...values) - 1 : 0;
+      const high = id === 'bristol' ? 7 : Math.max(low + 1, ...values) * (id === 'weight' ? 1 : 1.1);
+      const start = points[0]?.time ?? 0, end = points.at(-1)?.time ?? 1;
+      const x = time => start === end ? (left + right) / 2 : left + (time - start) / (end - start) * (right - left);
+      const y = value => bottom - (value - low) / (high - low) * (bottom - top);
+      const format = value => value.toLocaleString('es-ES', { maximumFractionDigits: 1 });
+      const date = time => new Date(time).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      const grid = Array.from({ length: 4 }, (_, i) => { const value = low + (high - low) * i / 3; return `<line x1="${left}" x2="${right}" y1="${y(value)}" y2="${y(value)}" stroke="currentColor" opacity=".15"/><text x="${left - 8}" y="${y(value) + 4}" text-anchor="end">${format(value)}</text>`; }).join('');
+      const line = id === 'bristol' || points.length < 2 ? '' : `<path d="${points.map((p, i) => `${i ? 'L' : 'M'}${x(p.time)},${y(p.value)}`).join(' ')}" fill="none" stroke="${color}" stroke-width="2"/>`;
+      const dots = points.map(p => `<circle cx="${x(p.time)}" cy="${y(p.value)}" r="4" fill="${color}"><title>${escape(date(p.time))}: ${format(p.value)} ${unit}</title></circle>`).join('');
+      const labels = points.length ? `<text x="${left}" y="215">${date(start)}</text><text x="${right}" y="215" text-anchor="end">${date(end)}</text>` : '<text x="340" y="108" text-anchor="middle">Sin registros</text>';
+      return `<figure class="card history-chart" data-chart="${id}"><figcaption>${title} <span>${unit}</span></figcaption><svg viewBox="0 0 640 230" role="img" aria-labelledby="chart-${id}-title chart-${id}-desc"><title id="chart-${id}-title">${title}</title><desc id="chart-${id}-desc">${points.length} puntos registrados. Los días sin datos no se representan como cero. ${points.length ? points.map(p => `${date(p.time)}: ${format(p.value)} ${unit}`).join('; ') : 'Sin registros.'}</desc>${grid}${line}${dots}${labels}</svg></figure>`;
+    }).join('');
+  }
   function dataChanged() {
     if (!initialized) return;
     if (draftSignature || controller) {
       try { if ((draftSignature || currentRequestSignature) !== payloadSignature()) invalidate(); }
       catch { invalidate(); }
     }
-    renderSummary(); renderArchive();
+    renderSummary(); renderArchive(); renderCharts();
   }
   let currentRequestSignature = null;
   function init() {
@@ -340,6 +376,11 @@
       for (const n of STRENGTHS) $(`available-${n}`).checked = existing.available.includes(n);
       $('regimen-confirmed').checked = true;
     }
+    const tools = document.createElement('details'); tools.id = 'analytics-tools-settings'; tools.className = 'card';
+    const summary = document.createElement('summary'); summary.textContent = 'Herramientas del historial';
+    const content = document.createElement('div'); content.id = 'analytics-tools';
+    content.append(...Array.from($('lab-screen').children)); tools.append(summary, content); $('settings-dialog').append(tools);
+    renderCharts();
     initialized = true;
     for (const id of ['analytics-from', 'analytics-to']) $(id).addEventListener('change', () => { invalidate(); message('Periodo actualizado.'); });
     $('analyze-diary').addEventListener('click', () => { try { currentRequestSignature = payloadSignature(); } catch {} analyzeDiary(); });
@@ -374,8 +415,7 @@
       invalidate(); renderCapsules(); $('regimen-status').textContent = 'Pauta borrada. No se calcularán cápsulas hasta que registres una pauta prescrita.';
     });
     $('edit-meal-regimen').addEventListener('click', () => {
-      document.querySelector('[data-screen="lab"]').click();
-      $('settings-dialog').close();
+      $('analytics-tools-settings').open = true;
       const details = $('regimen-form').closest('details'); details.open = true;
       details.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('regimen-meal').focus();
     });

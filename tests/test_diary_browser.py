@@ -25,6 +25,18 @@ def count(page, n):
     expect(page.locator('#timeline tr[data-record-id]')).to_have_count(n)
 
 
+def show_screen(page, screen):
+    if page.locator('#settings-dialog').is_visible(): page.get_by_role('button',name='Cerrar ajustes').click()
+    page.locator(f'[data-screen="{screen}"]').click()
+
+def open_analytics_tools(page):
+    show_screen(page, 'lab')
+    expect(page.locator('#lab-screen svg')).to_have_count(4)
+    assert page.locator('#lab-screen button, #lab-screen input, #lab-screen table').count()==0
+    page.get_by_role('button',name='Ajustes',exact=True).click()
+    if not page.locator('#analytics-tools-settings').evaluate('(el) => el.open'): page.locator('#analytics-tools-settings > summary').click()
+
+
 def open_backup(page):
     if not page.locator('#settings-dialog').is_visible(): page.get_by_role('button',name='Ajustes',exact=True).click()
     if not page.locator('#backup-settings').evaluate('(el) => el.open'): page.locator('#backup-settings > summary').click()
@@ -143,12 +155,12 @@ def run():
         assert abs((datetime.now(timezone.utc)-datetime.fromisoformat(meal['timestamp'].replace('Z','+00:00'))).total_seconds()) < 120
         print('PASS: removed medicine parameters and laboratory UI; meals work without an invented dose')
 
-        page.locator('[data-screen="lab"]').click()
-        page.locator('details:has(#regimen-form) > summary').click()
+        open_analytics_tools(page)
+        page.locator('#analytics-tools details:has(#regimen-form) > summary').click()
         page.locator('#regimen-meal').fill('65000'); page.locator('#regimen-snack').fill('25000')
         page.locator('#regimen-confirmed').check(); page.locator('#regimen-form button[type="submit"]').click()
         expect(page.locator('#regimen-status')).to_contain_text('Pauta guardada')
-        page.locator('[data-screen="meal"]').click()
+        show_screen(page, 'meal')
         expect(page.locator('#capsule-details')).to_contain_text('3 cápsulas de 10.000')
         expect(page.locator('#capsule-details')).to_contain_text('1 cápsula de 35.000')
         expect(page.locator('#capsule-breakdown')).to_contain_text('65.000')
@@ -175,10 +187,11 @@ def run():
         page.once('dialog',lambda dialog:dialog.accept())
         page.locator(f'[data-action="delete"][data-id="{extra_id}"]').click(); count(page,4)
         assert not any(r['id']==extra_id for r in stored(page))
-        page.reload(); page.locator('[data-screen="diary"]').click(); count(page,4)
+        page.reload(); show_screen(page, 'diary'); count(page,4)
+        for chart in ['fat','kreon','bristol','weight']: expect(page.locator(f'[data-chart="{chart}"] circle')).to_have_count(1)
         print('PASS: exact prescribed capsule combinations, snack selection, explicit taking and meal association, persistence')
 
-        page.locator('[data-screen="lab"]').click()
+        open_analytics_tools(page)
         expect(page.locator('#analytics-metrics')).to_contain_text('25.000 UI')
         expect(page.locator('#analytics-metrics')).to_contain_text('12,5 g')
         page.locator('#analyze-diary').click(); expect(page.locator('#analytics-result')).to_contain_text('Faltan datos')
@@ -201,7 +214,7 @@ def run():
         mode['value']='success'
         print('PASS: diary-only LLM payload, official reference, missing-context guard, no autonomous dosing, invented evidence rejection, cancellation')
 
-        page.locator('[data-screen="diary"]').click(); count(page,5)
+        show_screen(page, 'diary'); count(page,5)
         legacy={'id':'legacy-pdf','type':'lab','timestamp':'2026-06-01T12:00:00Z','title':'Documento anterior','markers':[],
                 'files':[{'name':'original.pdf','mime':'application/pdf','dataUrl':'data:application/pdf;base64,'+base64.b64encode(PDF).decode()}]}
         open_backup(page)
@@ -219,7 +232,7 @@ def run():
         backup=json.loads(backup_path.read_text()); assert len(backup['entries'])==6 and 'sk-or-test-only' not in backup_path.read_text()
         fresh=browser.new_context(viewport={'width':390,'height':844},timezone_id='Europe/Madrid')
         second=fresh.new_page(); second.on('pageerror',lambda e:errors.append(str(e)))
-        second.goto(URL); second.wait_for_selector('#record-form',state='attached'); second.locator('[data-screen="diary"]').click()
+        second.goto(URL); second.wait_for_selector('#record-form',state='attached'); show_screen(second, 'diary')
         open_backup(second)
         second.locator('#import-diary').set_input_files(str(backup_path)); count(second,6)
         second.locator('#import-diary').set_input_files(str(backup_path)); expect(second.locator('#diary-status')).to_contain_text('Importados 0')
@@ -229,8 +242,7 @@ def run():
         history=synthetic_history()
         second.locator('#import-diary').set_input_files({'name':'synthetic.json','mimeType':'application/json','buffer':json.dumps({'app':'RubyKreon','version':1,'entries':history}).encode()})
         count(second,167)
-        second.get_by_role('button',name='Cerrar ajustes').click()
-        second.locator('[data-screen="lab"]').click()
+        open_analytics_tools(second)
         second.locator('#train-regression').click(); expect(second.locator('#regression-status')).to_contain_text('Modelo entrenado')
         expect(second.locator('#regression-result')).to_contain_text('32 comidas de entrenamiento')
         expect(second.locator('#regression-result')).to_contain_text('8 de validación')
@@ -258,14 +270,14 @@ def run():
           const result=RubyRegression.train(rows); return {error:result.metrics.mae,omitted:result.omitted.length};
         }""")
         assert constant['error']<.01 and constant['omitted']==4
-        second.locator('[data-screen="meal"]').click(); second.evaluate("document.getElementById('meal-time').value='2026-09-10T12:00'")
+        show_screen(second, 'meal'); second.evaluate("document.getElementById('meal-time').value='2026-09-10T12:00'")
         second.evaluate("RubyDiary.setMealAnalysis({totalFat:20,calories:400,confidence:80,dish:'Prueba',description:'Prueba sintética'})")
         second.evaluate("document.getElementById('meal-time').value='2026-09-10T12:00'; RubyRegression.renderPrediction()")
         expect(second.locator('#regression-prediction')).to_contain_text('Predicción del registro:')
         expect(second.locator('#capsule-details')).to_contain_text('Indica tu pauta prescrita')
         print('PASS: linear fit against known synthetic relationship, chronological validation, future-data exclusion, collinearity handling, prediction separated from prescribing')
 
-        second.locator('[data-screen="diary"]').click()
+        show_screen(second, 'diary')
         count(second,167)
         assert second.locator('#diary-screen button:not([data-action])').count()==1
         expect(second.locator('#timeline th')).to_have_text(['Día','Hora','Tipo','Editar','Borrar'])
@@ -274,8 +286,8 @@ def run():
         second.locator('#import-diary').set_input_files({'name':'invalid.json','mimeType':'application/json','buffer':json.dumps(invalid).encode()})
         expect(second.locator('#diary-status')).to_have_class('error'); assert len(stored(second))==167
         second.evaluate('() => navigator.serviceWorker.ready'); second.reload(); second.wait_for_function('Boolean(navigator.serviceWorker.controller)')
-        assert second.evaluate("() => caches.open('rubykreon-v14').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
-        fresh.set_offline(True); second.reload(); second.locator('[data-screen="diary"]').click(); count(second,167); fresh.set_offline(False)
+        assert second.evaluate("() => caches.open('rubykreon-v15').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
+        fresh.set_offline(True); second.reload(); show_screen(second, 'diary'); count(second,167); fresh.set_offline(False)
         assert second.evaluate('document.documentElement.scrollWidth <= innerWidth')
         assert not errors,errors
         print('PASS: minimal records table, invalid-import preservation, offline diary and model assets, mobile layout, no browser errors')

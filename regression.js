@@ -109,7 +109,7 @@
   function init() {
     const panel = document.createElement('div'); panel.className = 'card diary-form'; panel.id = 'regression-panel';
     panel.innerHTML = `<h2>Regresión lineal del historial</h2><p class="help">Predice las UI registradas por comida a partir de grasa estimada, peso, Bristol medio y aspecto graso en las 48 horas previas, y última toma. Aprende el patrón de tus registros; no la dosis terapéutica adecuada. No modifica tu pauta ni se convierte en cápsulas para tomar.</p><p class="help">Utiliza el historial completo, independientemente del filtro de fechas del resumen. Asocia las tomas a sus comidas en Diario. Se necesitan al menos 30 comidas completas. El 80 % más antiguo se reserva para entrenar y el 20 % posterior para evaluar. Tanto las variables como las etiquetas de entrenamiento deben estar disponibles antes de la validación.</p><p id="regression-data" class="help"></p><button type="button" class="btn-save" id="train-regression">Entrenar regresión con mi historial</button><p id="regression-status" role="status" class="help"></p><div id="regression-result"></div>`;
-    $('lab-screen').append(panel);
+    $('analytics-tools').append(panel);
     const preview = document.createElement('div'); preview.className = 'card diary-form'; preview.id = 'regression-preview';
     preview.innerHTML = '<h2>Predicción estadística del registro</h2><p id="regression-prediction" class="help">Entrena el modelo en Analíticas para explorar las UI que predeciría el historial. Esta cifra no es una indicación de toma.</p>';
     $('capsule-card').after(preview);

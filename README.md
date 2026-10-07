@@ -112,3 +112,5 @@ La pestaña Comida muestra solo fotos, descripción, botón de análisis y resul
 El resultado de Kreon incluye «Cambiar UI por gramo de grasa», que abre y enfoca el parámetro en Ajustes. «Guardar UI/g» lo conserva para próximas simulaciones. La descripción es solo un campo de texto, sin etiqueta ni tarjeta exterior.
 
 La pestaña Registros muestra una tabla con día, hora y tipo, y acciones Editar/Borrar por fila. Un único botón Nuevo registro abre el formulario en una ventana. Copias de seguridad y evolución de peso permanecen en Ajustes; los archivos originales pueden descargarse al editar el registro.
+
+Analíticas contiene únicamente cuatro gráficas del historial: grasa estimada diaria, Kreon registrado diario, Bristol y peso. Las fechas usan el tiempo real de los registros; los días sin datos no se sustituyen por cero. Bristol se muestra como puntos ordinales. Los ajustes, revisión con IA y regresión permanecen bajo Ajustes → Herramientas del historial.

@@ -79,3 +79,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .records-table th, .records-table td { padding: 9px 4px; }
 .records-table .small-btn { padding: 7px 6px; font-size: .75rem; }
 #record-dialog .card { border: 0; padding: 0; }
+
+.history-chart { margin: 0; }
+.history-chart figcaption { font-size: .95rem; font-weight: 600; display: flex; justify-content: space-between; gap: 12px; }
+.history-chart figcaption span { color: var(--muted); font-size: .75rem; font-weight: 400; }
+.history-chart svg { width: 100%; height: auto; display: block; margin-top: 12px; color: var(--muted); }
+.history-chart svg text { fill: currentColor; font-size: 18px; font-family: inherit; }
