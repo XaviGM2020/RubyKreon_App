@@ -100,3 +100,5 @@ El diario y sus modelos no sustituyen la pauta prescrita ni la valoración sanit
 MIT © 2024
 
 Tras el análisis de la comida, Kreon muestra el desglose de cápsulas, unidades de lipasa por cápsula, subtotales y total según la pauta prescrita guardada. El acceso «Introducir o revisar mi pauta prescrita» abre directamente el formulario. La estimación de grasa no determina ni modifica la dosis personal.
+
+Enlace único de instalación y actualizaciones: https://xavigm2020.github.io/RubyKreon_App/. Chrome requiere confirmar la instalación. La app comprueba versiones al abrirse, al recuperar conexión, al volver al primer plano y cada minuto mientras está visible. Recarga automáticamente si no hay cambios; con formularios modificados o cámara/análisis activos, aplaza la recarga y ofrece aplicarla desde Ajustes. El diario y la clave se mantienen. Las actualizaciones necesitan conexión.

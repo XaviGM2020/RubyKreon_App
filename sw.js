@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rubykreon-v8';
+const CACHE_NAME = 'rubykreon-v9';
 const ASSETS = [
   '/RubyKreon_App/',
   '/RubyKreon_App/index.html',
@@ -14,9 +14,8 @@ const ASSETS = [
 // Install: cache core assets
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS.map(url => new Request(url, { cache: 'reload' })))).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 // Activate: clean old caches
@@ -24,9 +23,8 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME && /^(fatdose-|rubykreon-)/.test(k)).map(k => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // Fetch: network first, fallback to cache
@@ -45,6 +43,13 @@ self.addEventListener('fetch', e => {
         }
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(async () => {
+        const cache = await caches.open(CACHE_NAME);
+        return await cache.match(e.request) || (e.request.mode === 'navigate' ? await cache.match('/RubyKreon_App/') : undefined) || Response.error();
+      })
   );
+});
+
+self.addEventListener('message', event => {
+  if (event.data?.type === 'APP_VERSION') event.ports[0]?.postMessage({ version: CACHE_NAME });
 });

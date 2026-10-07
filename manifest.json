@@ -21,6 +21,11 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["medical", "health"],
-  "lang": "es"
+  "categories": [
+    "medical",
+    "health"
+  ],
+  "lang": "es",
+  "id": "/RubyKreon_App/",
+  "scope": "/RubyKreon_App/"
 }
