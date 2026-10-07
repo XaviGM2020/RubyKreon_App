@@ -91,6 +91,12 @@ def run():
         page.locator('#analyze-btn').click(); expect(page.locator('#results')).to_be_visible()
         content=requests[-1]['messages'][0]['content']
         assert len(content)==1 and content[0]['type']=='text'
+        expect(page.locator('#aemps-reference-card')).to_be_visible()
+        assert page.locator('#aemps-reference-combinations tbody tr').count()==12
+        reference=page.locator('#aemps-reference-combinations tbody tr').all_text_contents()
+        assert any('25.0001 cápsula de 25.000 UI1' in row for row in reference)
+        assert any('80.000' in row and '3' in row for row in reference)
+        assert page.evaluate('RubyAnalytics.suggestForMeal()') is None
         assert '150 g de arroz cocido' in content[0]['text']
         page.locator('#meal-title').fill(' ')
         expect(page.locator('#analyze-btn')).to_be_disabled()
@@ -213,7 +219,7 @@ def run():
         second.locator('#import-diary').set_input_files({'name':'invalid.json','mimeType':'application/json','buffer':json.dumps(invalid).encode()})
         expect(second.locator('#diary-status')).to_have_class('error'); assert len(stored(second))==167
         second.evaluate('() => navigator.serviceWorker.ready'); second.reload(); second.wait_for_function('Boolean(navigator.serviceWorker.controller)')
-        assert second.evaluate("() => caches.open('rubykreon-v9').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
+        assert second.evaluate("() => caches.open('rubykreon-v10').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
         fresh.set_offline(True); second.reload(); second.locator('[data-screen="diary"]').click(); count(second,167); fresh.set_offline(False)
         assert second.evaluate('document.documentElement.scrollWidth <= innerWidth')
         assert not errors,errors

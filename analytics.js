@@ -78,6 +78,15 @@
     const capsules = capsuleCombination(targetUI, prescription.available);
     return capsules ? normalizeSuggestion({ targetUI, capsules, regimenUpdatedAt: prescription.updatedAt }) : null;
   }
+  function renderAempsReference() {
+    const rows = [];
+    for (let total = 25000; total <= 80000; total += 5000) {
+      const capsules = capsuleCombination(total);
+      if (!capsules) continue;
+      rows.push(`<tr><td>${total.toLocaleString('es-ES')}</td><td>${combinationText(capsules)}</td><td>${Object.values(capsules).reduce((sum, count) => sum + count, 0)}</td></tr>`);
+    }
+    $('aemps-reference-combinations').innerHTML = `<table><caption>Ejemplos de reparto exacto en cápsulas de 10.000, 25.000 y 35.000 UI</caption><thead><tr><th>Total UI de lipasa</th><th>Combinación</th><th>Número de cápsulas</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  }
   function renderCapsules() {
     const prescription = profile(), kind = $('meal-kind').value;
     const suggestion = suggestForMeal(kind);
@@ -328,7 +337,7 @@
       details.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('regimen-meal').focus();
     });
     $('use-capsules').addEventListener('click', () => { const suggestion = suggestForMeal($('meal-kind').value); if (suggestion) window.RubyDiary.prepareTakenDose(suggestion.capsules); });
-    renderCapsules(); renderSummary(); renderArchive();
+    renderAempsReference(); renderCapsules(); renderSummary(); renderArchive();
   }
   window.RubyAnalytics = { init, dataChanged, renderCapsules, suggestForMeal, capsuleCombination, combinationText, normalizeProfile, normalizeSuggestion, normalizeNarrative, normalizeReport, selectEntries, summarize, analysisRequest };
 })();

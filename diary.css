@@ -60,6 +60,6 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   .diary-tabs button { font-size: .78rem; }
 }
 
-#capsule-breakdown table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: .85rem; }
-#capsule-breakdown th, #capsule-breakdown td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--border); }
-#capsule-breakdown caption { text-align: left; margin-bottom: 8px; }
+#capsule-breakdown table, .capsule-table table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: .85rem; }
+#capsule-breakdown th, #capsule-breakdown td, .capsule-table th, .capsule-table td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+#capsule-breakdown caption, .capsule-table caption { text-align: left; margin-bottom: 8px; }
