@@ -136,7 +136,7 @@
     $('capsule-breakdown').hidden = !suggestion;
     $('capsule-breakdown').innerHTML = suggestion ? `<table><caption>Càpsules segons la pauta prescrita desada</caption><thead><tr><th>UI de lipasa per càpsula</th><th>Càpsules</th><th>Subtotal UI</th></tr></thead><tbody>${STRENGTHS.filter(strength => suggestion.capsules[strength] > 0).map(strength => `<tr><td>${(strength * 1000).toLocaleString('ca-ES')}</td><td>${suggestion.capsules[strength]}</td><td>${(strength * 1000 * suggestion.capsules[strength]).toLocaleString('ca-ES')}</td></tr>`).join('')}</tbody><tfoot><tr><th>Total UI de lipasa</th><td>${Object.values(suggestion.capsules).reduce((sum, count) => sum + count, 0)}</td><td>${suggestion.totalUI.toLocaleString('ca-ES')}</td></tr></tfoot></table><p class="help">La combinació correspon a la teva pauta prescrita. El greix estimat del plat no modifica automàticament aquesta dosi.</p>` : '';
     if (!prescription) {
-      $('capsule-details').textContent = 'Indica la teva pauta prescrita a Ajustos → Eines de l’historial → La meva pauta. Amb aquesta pauta calcularem quantes càpsules de 10.000, 25.000 i 35.000 UI corresponen, sense que hagis de fer la suma.';
+      $('capsule-details').textContent = '';
     } else if (kind === 'snack' && prescription.snackUI == null) {
       $('capsule-details').textContent = 'No hi ha una pauta per refrigeris desada. Consulta i introdueix la indicada pel teu professional; no s’aplica automàticament la d’un àpat principal.';
     } else if (!suggestion) {
@@ -325,102 +325,19 @@
       try { if ((draftSignature || currentRequestSignature) !== payloadSignature()) invalidate(); }
       catch { invalidate(); }
     }
-    renderSummary(); renderArchive(); renderCharts();
+    renderCharts();
   }
   let currentRequestSignature = null;
   function init() {
-    $('lab-screen').innerHTML = `<div class="card diary-form">
-      <h2>Analítiques del diari</h2>
-      <p class="help">Compara el que has registrat: àpats, greix estimat, preses de Kreon, Bristol i pes. Les dades incompletes no demostren que no hagis menjat o pres medicació.</p>
-      <div class="diary-filter"><label>Des de<input id="analytics-from" type="date"></label><label>Fins<input id="analytics-to" type="date"></label></div>
-      <div id="analytics-metrics" class="analytics-metrics"></div>
-      <div id="analytics-days" class="diary-table-wrap"></div>
-    </div>
-    <div class="card diary-form">
-      <h2>Revisar patrons i pauta amb IA</h2>
-      <p class="help">L’anàlisi utilitza àpats, deposicions anteriors, preses i pes, amb la fitxa tècnica d’AEMPS com referència. Proposa què revisar amb el professional abans de modificar dosi; Bristol per si sol no determina un ajust. S’enviaran les dades del període i la pauta a OpenRouter.</p>
-      <p id="analytics-data-note" class="help"></p>
-      <button id="analyze-diary" class="btn-save" type="button">Analitzar el diari i valorar revisió de pauta</button>
-      <button id="cancel-analysis" class="small-btn" type="button" hidden>Cancel·lar anàlisi</button>
-      <p id="analytics-status" role="status" class="help"></p>
-      <div id="analytics-result" class="analysis-narrative"></div>
-      <button id="save-review" class="btn-save" type="button" hidden>✓ Desar anàlisi als registres</button>
-    </div>
-    <details class="card"><summary>La meva pauta prescrita i presentacions disponibles</summary>
-      <form id="regimen-form" class="diary-form" style="margin-top:16px">
-        <p class="help">Introdueix les UI per àpat que t’ha indicat el teu professional. L’app les converteix en una combinació exacta amb el menor nombre de càpsules, sense augmentar ni arrodonir la dosi. Si la teva pauta depèn del greix o altres factors, consulta abans com registrar-la; no utilitzis aquí una xifra inventada.</p>
-        <label>UI per àpat principal<input id="regimen-meal" type="number" min="1" max="1000000" step="1" required></label>
-        <label>UI per refrigeri (opcional)<input id="regimen-snack" type="number" min="1" max="1000000" step="1"></label>
-        <p class="help">Presentacions que pots utilitzar segons la teva pauta:</p>
-        ${STRENGTHS.map(n => `<label class="check-label"><input id="available-${n}" type="checkbox" checked>${n}.000 UI</label>`).join('')}
-        <label class="check-label"><input id="regimen-confirmed" type="checkbox" required>Aquests valors i presentacions corresponen a la meva pauta prescrita.</label>
-        <button class="btn-save" type="submit">Desar la meva pauta</button>
-        <button id="remove-regimen" class="small-btn" type="button">Esborrar pauta desada</button>
-        <p id="regimen-status" role="status" class="help"></p>
-        <a class="help" href="https://cima.aemps.es/cima/dochtml/ft/83862/FT_83862.html" target="_blank" rel="noopener">Fitxa tècnica Kreon: els canvis de dosi requereixen supervisió.</a>
-      </form>
-    </details>
-    <details class="card"><summary>Context per a la revisió de la fitxa tècnica</summary><form id="clinical-form" class="diary-form" style="margin-top:16px">
-      <label>Edat (anys)<input id="clinical-age" type="number" min="0" max="120" step="1" required></label>
-      <label>Diagnòstic indicat pel professional<select id="clinical-condition"><option value="unknown">no indicat</option><option value="cf">Fibrosis quística</option><option value="other-ipe">Una altra insuficiència pancreàtica exocrina</option></select></label>
-      <p class="help">El pes s’obté de l’últim registre del diari, mostrant la seva data en enviar-lo a la IA. no es dedueix un diagnòstic a partir dels símptomes.</p>
-      <button class="btn-save" type="submit">Desar context</button><p id="clinical-status" class="help" role="status"></p>
-    </form></details>
-    <div class="card diary-form"><h2>Anàlisis desades</h2><div id="analysis-archive"></div></div>`;
-    const today = new Date(), start = new Date(); start.setDate(today.getDate() - 29);
-    $('analytics-from').value = day(start); $('analytics-to').value = day(today);
-    const existing = profile();
-    const clinical = clinicalContext(); $('clinical-age').value = clinical.age ?? ''; $('clinical-condition').value = clinical.condition;
-    if (existing) {
-      $('regimen-meal').value = existing.mealUI; $('regimen-snack').value = existing.snackUI ?? '';
-      for (const n of STRENGTHS) $(`available-${n}`).checked = existing.available.includes(n);
-      $('regimen-confirmed').checked = true;
-    }
-    const tools = document.createElement('details'); tools.id = 'analytics-tools-settings'; tools.className = 'card';
-    const summary = document.createElement('summary'); summary.textContent = 'Eines de l’historial';
-    const content = document.createElement('div'); content.id = 'analytics-tools';
-    content.append(...Array.from($('lab-screen').children)); tools.append(summary, content); $('settings-dialog').append(tools);
-    renderCharts();
     initialized = true;
-    for (const id of ['analytics-from', 'analytics-to']) $(id).addEventListener('change', () => { invalidate(); message('Període actualitzat.'); });
-    $('analyze-diary').addEventListener('click', () => { try { currentRequestSignature = payloadSignature(); } catch {} analyzeDiary(); });
-    $('cancel-analysis').addEventListener('click', () => { invalidate(); message('Anàlisi cancel·lat.'); });
-    $('save-review').addEventListener('click', async () => {
-      if (!draft || draftSignature !== payloadSignature()) return message('El diari ha canviat. Genera una anàlisi actualitzat.', true);
-      $('save-review').disabled = true;
-      try { await window.RubyDiary.saveReview(draft); $('save-review').hidden = true; message('✓ Anàlisi desat.'); }
-      catch (error) { message(error.message, true); }
-      finally { $('save-review').disabled = false; }
+    $('use-capsules').addEventListener('click', () => {
+      const suggestion = suggestForMeal($('meal-kind').value);
+      if (suggestion) {
+        $('settings-dialog').close();
+        window.RubyDiary.prepareTakenDose(suggestion.capsules);
+      }
     });
-    $('regimen-form').addEventListener('submit', event => {
-      event.preventDefault();
-      try {
-        const next = normalizeProfile({ mealUI: $('regimen-meal').value, snackUI: $('regimen-snack').value, available: STRENGTHS.filter(n => $(`available-${n}`).checked), confirmed: $('regimen-confirmed').checked, updatedAt: new Date().toISOString() });
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
-        window.RubyDiary.clearMealAnalysis(); $('results').style.display = 'none';
-        invalidate(); renderCapsules(); $('regimen-status').textContent = '✓ Pauta desada. La combinació apareix a Menjar.';
-      } catch (error) { $('regimen-status').textContent = error.message; }
-    });
-    $('clinical-form').addEventListener('submit', event => {
-      event.preventDefault();
-      const age = Number($('clinical-age').value);
-      if (!$('clinical-age').value || !Number.isInteger(age) || age < 0 || age > 120) return;
-      localStorage.setItem(CLINICAL_KEY, JSON.stringify({ age, condition: $('clinical-condition').value }));
-      invalidate(); $('clinical-status').textContent = '✓ Context desat per a la revisió.';
-    });
-    for (const id of ['regimen-meal', 'regimen-snack', ...STRENGTHS.map(n => `available-${n}`)]) $(id).addEventListener('input', () => { $('regimen-confirmed').checked = false; });
-    $('remove-regimen').addEventListener('click', () => {
-      localStorage.removeItem(PROFILE_KEY); $('regimen-form').reset();
-      window.RubyDiary.clearMealAnalysis(); $('results').style.display = 'none';
-      invalidate(); renderCapsules(); $('regimen-status').textContent = 'Pauta esborrada. No es calcularan càpsules fins que registris una pauta prescrita.';
-    });
-    $('edit-meal-regimen').addEventListener('click', () => {
-      $('analytics-tools-settings').open = true;
-      const details = $('regimen-form').closest('details'); details.open = true;
-      details.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('regimen-meal').focus();
-    });
-    $('use-capsules').addEventListener('click', () => { const suggestion = suggestForMeal($('meal-kind').value); if (suggestion) { $('settings-dialog').close(); window.RubyDiary.prepareTakenDose(suggestion.capsules); } });
-    initSimulation(); renderAempsReference(); renderCapsules(); renderSummary(); renderArchive();
+    initSimulation(); renderAempsReference(); renderCapsules(); renderCharts();
   }
   window.RubyAnalytics = { init, renderSimulation, dataChanged, renderCapsules, suggestForMeal, capsuleCombination, combinationText, normalizeProfile, normalizeSuggestion, normalizeNarrative, normalizeReport, selectEntries, summarize, analysisRequest };
 })();

@@ -107,6 +107,7 @@
   }
   function formatted(value) { return Number(value).toLocaleString('ca-ES', { maximumFractionDigits: 1 }); }
   function init() {
+    if (!$('analytics-tools')) return;
     const panel = document.createElement('div'); panel.className = 'card diary-form'; panel.id = 'regression-panel';
     panel.innerHTML = `<h2>Regressió lineal de l’historial</h2><p class="help">Prediu les UI registrades per àpat a partir de greix estimat, pes, Bristol mitjà i aspecte gras en les 48 hores prèvies, i última presa. Aprèn el patró dels teus registres; no la dosi terapèutica adequada. No modifica la teva pauta ni es converteix en càpsules per prendre.</p><p class="help">Utilitza l’historial complet, indepènntment del filtre de dates del resum. Associa les preses a els seus àpats a Registres. Calen com a mínim 30 àpats complets. El 80 % més antic es reserva per entrenar i el 20 % posterior per avaluar. Tant les variables com les etiquetes d’entrenament han d’estar disponibles abans de la validació.</p><p id="regression-data" class="help"></p><button type="button" class="btn-save" id="train-regression">Entrenar regressió amb el meu historial</button><p id="regression-status" role="status" class="help"></p><div id="regression-result"></div>`;
     $('analytics-tools').append(panel);
