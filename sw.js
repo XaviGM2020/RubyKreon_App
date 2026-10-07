@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fatdose-v1';
+const CACHE_NAME = 'fatdose-v2';
 const ASSETS = [
   '/RubyKreon_App/',
   '/RubyKreon_App/index.html',

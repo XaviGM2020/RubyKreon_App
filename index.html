@@ -163,6 +163,22 @@
     .drop-zone p { color: var(--muted); font-size: 0.9rem; }
     .drop-zone p strong { color: var(--text); }
 
+    .photo-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .photo-btn {
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 18px; cursor: pointer; font: inherit;
+    }
+    .photo-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .photo-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    #camera-dialog {
+      margin: auto; width: min(92vw, 600px); max-height: 90vh; overflow: auto;
+      background: var(--bg); color: var(--text); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+    }
+    #camera-dialog::backdrop { background: rgba(0,0,0,.75); }
+    #camera-video { width: 100%; max-height: 60vh; border-radius: 10px; background: #000; }
+    #camera-status { margin: 12px 0; color: var(--muted); }
+
     /* ── PREVIEW ── */
     #preview-wrap {
       display: none;
@@ -466,6 +482,19 @@
 
 <main>
 
+  <div class="card" id="install-card">
+    <div class="card-label">Instala RubyKreon en tu móvil</div>
+    <p>Abre la app desde un icono en tu pantalla de inicio.</p>
+    <div class="photo-actions">
+      <button type="button" class="btn-install" id="install-card-btn" onclick="installApp()" hidden>Instalar app</button>
+    </div>
+    <p id="install-help" style="margin-top:10px;font-size:0.85rem;color:var(--muted);">
+      Android: abre este enlace en Chrome → menú ⋮ → Instalar app o Añadir a pantalla de inicio.
+      iPhone: abre este enlace en Safari → Compartir → Añadir a pantalla de inicio → Añadir.
+      Si estás en WhatsApp u otra app, abre el enlace en el navegador del móvil.
+    </p>
+  </div>
+
   <!-- API Key -->
   <div class="card">
     <div class="card-label">Configuración · API Key Google AI Studio</div>
@@ -480,7 +509,7 @@
   <div class="card">
     <div class="card-label">Foto del plato</div>
     <div class="drop-zone" id="drop-zone">
-      <input type="file" id="file-input" accept="image/*" onchange="handleFile(this.files[0])"/>
+      <input type="file" id="file-input" aria-label="Subir una foto del plato" accept="image/*" onchange="handleFile(this.files[0])"/>
       <div class="drop-icon">🍽️</div>
       <p><strong>Sube o arrastra</strong> una foto del plato</p>
       <p style="margin-top:6px;font-size:0.78rem;">JPG, PNG, WEBP · máx 20 MB</p>
@@ -489,6 +518,10 @@
       <img id="preview-img" src="" alt="Plato"/>
       <button class="change-btn" onclick="resetImage()">Cambiar</button>
     </div>
+    <div class="photo-actions">
+      <button type="button" class="photo-btn" id="camera-btn" onclick="openCamera()">📷 Tomar foto</button>
+    </div>
+    <input type="file" id="camera-input" accept="image/*" capture="environment" hidden onchange="handleFile(this.files[0]); this.value = ''"/>
   </div>
 
   <!-- Medication config -->
@@ -580,8 +613,18 @@
 
 </main>
 
+<dialog id="camera-dialog" aria-labelledby="camera-title">
+  <h2 id="camera-title">Foto del plato</h2>
+  <p id="camera-status" role="status">Preparando la cámara…</p>
+  <video id="camera-video" autoplay playsinline muted></video>
+  <div class="photo-actions">
+    <button type="button" class="photo-btn" id="capture-btn" onclick="capturePhoto()" disabled>Capturar foto</button>
+    <button type="button" class="photo-btn" onclick="closeCamera()">Cancelar</button>
+  </div>
+</dialog>
+
 <div id="install-banner">
-  <p>📲 <span>Instalar RubyKreon</span> en tu Android como app</p>
+  <p>📲 <span>Instalar RubyKreon</span> en tu móvil</p>
   <button class="btn-install" onclick="installApp()">Instalar</button>
 </div>
 
@@ -589,6 +632,8 @@
   // ── State ──────────────────────────────────────────────────────────
   let imageBase64 = null;
   let imageMime   = 'image/jpeg';
+  let cameraStream = null;
+  let cameraSession = 0;
 
   const MED_PRESETS = {
     kreon10: { dosePerGram: 1000, maxDose: 40000, minDose: 10000, unit: 'UI lipasa',
@@ -633,6 +678,15 @@
     updateMedInfo();
     checkReady();
     setupDrag();
+    document.getElementById('camera-dialog').addEventListener('close', stopCamera);
+    document.getElementById('camera-dialog').addEventListener('cancel', e => {
+      e.preventDefault();
+      closeCamera();
+    });
+    window.addEventListener('pagehide', closeCamera);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) closeCamera();
+    });
   });
 
   // ── Drag & drop ────────────────────────────────────────────────────
@@ -648,24 +702,94 @@
   }
 
   // ── Image handling ─────────────────────────────────────────────────
+  async function openCamera() {
+    if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+      document.getElementById('camera-input').click();
+      return;
+    }
+    const dialog = document.getElementById('camera-dialog');
+    if (dialog.open) return;
+    const session = ++cameraSession;
+    const video = document.getElementById('camera-video');
+    const capture = document.getElementById('capture-btn');
+    capture.disabled = true;
+    document.getElementById('camera-status').textContent = 'Permite el acceso a la cámara para fotografiar el plato.';
+    dialog.showModal();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } }, audio: false
+      });
+      if (session !== cameraSession || !dialog.open) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      cameraStream = stream;
+      video.srcObject = stream;
+      await video.play();
+      if (session !== cameraSession || !dialog.open) return;
+      capture.disabled = false;
+      document.getElementById('camera-status').textContent = 'Encuadra el plato y pulsa Capturar foto.';
+    } catch (error) {
+      if (session !== cameraSession) return;
+      closeCamera();
+      showError(error.name === 'NotAllowedError'
+        ? 'No se pudo acceder a la cámara. Permite su uso en los ajustes del navegador o sube una foto.'
+        : 'No se pudo iniciar la cámara. Comprueba que esté conectada y disponible, o sube una foto.');
+    }
+  }
+
+  function stopCamera() {
+    ++cameraSession;
+    if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+    document.getElementById('camera-video').srcObject = null;
+    document.getElementById('capture-btn').disabled = true;
+  }
+
+  function closeCamera() {
+    stopCamera();
+    const dialog = document.getElementById('camera-dialog');
+    if (dialog.open) dialog.close();
+  }
+
+  function capturePhoto() {
+    const video = document.getElementById('camera-video');
+    if (!cameraStream || !video.videoWidth || !video.videoHeight) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    setImage(canvas.toDataURL('image/jpeg', .9), 'image/jpeg');
+    closeCamera();
+  }
+
+  function setImage(data, mime) {
+    imageMime = mime;
+    imageBase64 = data.split(',')[1];
+    document.getElementById('preview-img').src = data;
+    document.getElementById('drop-zone').style.display = 'none';
+    document.getElementById('preview-wrap').style.display = 'block';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('error-wrap').innerHTML = '';
+    checkReady();
+  }
+
   function handleFile(file) {
     if (!file || !file.type.startsWith('image/')) return;
-    imageMime = file.type;
+    if (file.size > 20 * 1024 * 1024) {
+      showError('La foto supera el límite de 20 MB. Elige una imagen más pequeña.');
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = e => {
-      const data = e.target.result;
-      imageBase64 = data.split(',')[1];
-      document.getElementById('preview-img').src = data;
-      document.getElementById('drop-zone').style.display  = 'none';
-      document.getElementById('preview-wrap').style.display = 'block';
-      checkReady();
-    };
+    reader.onload = e => setImage(e.target.result, file.type);
+    reader.onerror = () => showError('No se pudo leer la foto. Inténtalo de nuevo.');
     reader.readAsDataURL(file);
   }
 
   function resetImage() {
     imageBase64 = null;
     document.getElementById('file-input').value = '';
+    document.getElementById('camera-input').value = '';
     document.getElementById('drop-zone').style.display    = 'block';
     document.getElementById('preview-wrap').style.display = 'none';
     document.getElementById('results').style.display      = 'none';
@@ -853,25 +977,41 @@ Si no puedes identificar comida en la imagen, pon totalFat:0 y confidence:0.`;
 
   // ── Install banner ─────────────────────────────────────────────────
   let deferredPrompt = null;
+  const standaloneMode = window.matchMedia('(display-mode: standalone)');
+
+  function updateInstallUI() {
+    const installed = standaloneMode.matches || navigator.standalone === true;
+    document.getElementById('install-card').hidden = installed;
+    document.getElementById('install-card-btn').hidden = installed || !deferredPrompt;
+    document.getElementById('install-banner').style.display = !installed && deferredPrompt ? 'flex' : 'none';
+  }
+  updateInstallUI();
+  standaloneMode.addEventListener('change', updateInstallUI);
 
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
-    document.getElementById('install-banner').style.display = 'flex';
+    updateInstallUI();
   });
 
   window.addEventListener('appinstalled', () => {
-    document.getElementById('install-banner').style.display = 'none';
     deferredPrompt = null;
+    document.getElementById('install-card').hidden = true;
+    document.getElementById('install-banner').style.display = 'none';
   });
 
-  function installApp() {
+  async function installApp() {
     if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => {
-      deferredPrompt = null;
-      document.getElementById('install-banner').style.display = 'none';
-    });
+    const prompt = deferredPrompt;
+    deferredPrompt = null;
+    updateInstallUI();
+    try {
+      await prompt.prompt();
+      const choice = await prompt.userChoice;
+      if (choice.outcome === 'accepted') document.getElementById('install-card').hidden = true;
+    } catch {
+      document.getElementById('install-help').textContent = 'Abre el menú del navegador y selecciona Instalar app o Añadir a pantalla de inicio. En iPhone, usa Safari → Compartir → Añadir a pantalla de inicio.';
+    }
   }
 </script>
 </body>

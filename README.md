@@ -2,7 +2,7 @@
 
 **Análisis de grasas en platos de comida + cálculo de dosis de medicamento mediante IA**
 
-> Sube una foto de tu plato → la IA estima la grasa → se calcula la dosis automáticamente.
+> Toma o sube una foto de tu plato → la IA estima la grasa → se calcula la dosis automáticamente.
 
 ---
 
@@ -17,7 +17,15 @@
 
 ## Demo rápida (sin servidor)
 
+Enlace para compartir e instalar: **https://xavigm2020.github.io/RubyKreon_App/**. No hace falta una cuenta de GitHub.
+
+- **Android:** abre el enlace en Chrome y pulsa **Instalar app** cuando aparezca, o usa el menú ⋮ → **Instalar app / Añadir a pantalla de inicio**.
+- **iPhone:** abre el enlace en Safari → **Compartir → Añadir a pantalla de inicio → Añadir**.
+- Si el enlace se abre dentro de una app de mensajería, ábrelo en el navegador del teléfono.
+
 Solo necesitas abrir `index.html` en cualquier navegador moderno. No requiere instalación ni dependencias.
+
+Pulsa **Tomar foto** para abrir la cámara, encuadrar el plato y capturar la imagen. La vista previa de cámara requiere HTTPS o localhost y permiso del navegador. Si no está disponible, se abre el selector de fotos con captura de cámara en dispositivos compatibles. También puedes subir o arrastrar una imagen. La cámara se apaga al capturar, cancelar o salir de la app.
 
 ```bash
 git clone https://github.com/TU_USUARIO/fat-dose-app.git
