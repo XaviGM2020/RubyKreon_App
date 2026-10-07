@@ -1,77 +1,99 @@
-# RubyKreon — Diario de salud
+# RubyKreon — Diario y analíticas
 
-App instalable para registrar comidas, tomas de Kreon, deposiciones Bristol, peso e informes de analíticas.
+App instalable para comidas, tomas de Kreon, deposiciones Bristol y peso. **Analíticas** analiza estos registros, no informes de laboratorio.
 
 ## Abrir e instalar
 
 **https://xavigm2020.github.io/RubyKreon_App/** — abre directamente la app; no requiere cuenta de GitHub.
 
-- **Android:** abre el enlace en Chrome → **Instalar app**, o menú ⋮ → **Instalar app / Añadir a pantalla de inicio**.
-- **iPhone:** abre en Safari → **Compartir → Añadir a pantalla de inicio → Añadir**.
-- Si se abre dentro de una app de mensajería, usa el navegador del teléfono.
+- Android: Chrome → **Instalar app**, o menú ⋮ → **Instalar app / Añadir a pantalla de inicio**.
+- iPhone: Safari → **Compartir → Añadir a pantalla de inicio → Añadir**.
 
-## Funciones
+## Comidas y cápsulas
 
-- **Comidas:** foto del plato, hasta tres fotos adicionales, descripción, cantidad en gramos, ingredientes y observaciones. Se pueden guardar sin IA. El análisis usa las fotos y el contexto introducido.
-- **Cámara:** en móvil abre la captura propia del teléfono, conservando la imagen recibida sin filtros. En ordenador permite capturar desde una vista previa; requiere un contexto seguro y permiso de cámara.
-- **Kreon tomado:** registro independiente de cápsulas de 10.000, 25.000 y 35.000 UI (presentaciones indicadas por el usuario). Suma las UI registradas; no convierte automáticamente una estimación en una toma.
-- **Deposiciones:** tipos Bristol 1–7, fecha, hora y observaciones. Incluye descripciones y enlace a la guía visual del NHS.
-- **Peso:** kg, fecha, hora y evolución en tabla.
-- **Analíticas:** hasta seis archivos PDF o fotos por informe, máximo 20 MB en total. Conserva los archivos originales. La IA extrae fecha, parámetros, valores como texto, unidades y rangos impresos. Los valores pueden corregirse; deben confirmarse antes de archivarlos. Se puede archivar el original sin extracción y reabrirlo posteriormente para leerlo con IA.
-- **Línea temporal:** todos los registros ordenados por fecha y hora, filtros por día y tipo, edición, descarga de originales y eliminación con confirmación.
-- **Evolución:** tablas de peso y parámetros de analíticas; compara parámetros con el mismo nombre y unidad.
-- **Copia de seguridad:** exportación JSON con registros y archivos originales; importación validada que añade registros nuevos y omite identificadores existentes. No incluye claves de API. Límite de importación: 200 MB y 10.000 registros.
+La cámara del móvil conserva el archivo recibido sin filtros. Puedes guardar descripción, gramos, ingredientes, observaciones y hasta cuatro fotos. La IA estima el contenido nutricional usando fotos y contexto.
 
-## IA y configuración
+Se han eliminado de Comida los parámetros de medicamento y la fórmula automática basada en UI/g de grasa. No se utilizan dosis de partida inventadas ni se transforma Bristol en una dosis.
 
-1. Obtén una clave en [OpenRouter](https://openrouter.ai/settings/keys).
-2. Pégala en **API Key OpenRouter** y pulsa **Guardar**.
+En **Analíticas → Mi pauta prescrita**, registra las UI por comida principal y, opcionalmente, por tentempié, y las presentaciones autorizadas de 10.000, 25.000 y 35.000 UI. La app encuentra una combinación exacta con el menor número de cápsulas. No redondea al alza ni excede el objetivo para conseguir una combinación. Si falta una pauta o no se puede representar con esas cápsulas, no indica una toma.
 
-La clave se conserva en `localStorage` y se envía a OpenRouter para autenticar las peticiones. Se mantiene el nombre de almacenamiento `gai_key` para conservar la configuración existente.
+**Preparar registro de esta toma** rellena el formulario del diario: no guarda medicación como tomada hasta que confirmes el registro. La pauta no se cambia por una respuesta del LLM ni por el modelo de regresión.
 
-Se utiliza `meta-llama/llama-4-maverick` para comidas y transcripción de analíticas. Para PDF se solicita el procesador `mistral-ocr` de OpenRouter, que permite leer documentos escaneados. Las fotos, informes y contexto se envían al proveedor al pulsar el botón de análisis o lectura; pueden consumir saldo. Sin clave o sin conexión, puedes registrar datos y archivar informes manualmente.
+## Diario
 
-La extracción no interpreta resultados ni recomienda tratamientos. Los valores se guardan como texto para conservar decimales y signos como `<` o `>`. Los documentos se tratan como datos, no como instrucciones.
+- Comidas y fotos, con estimación nutricional opcional.
+- Tomas de Kreon con suma de UI y comida asociada. Puedes asociar registros anteriores mediante **Editar**.
+- Bristol 1–7 y aspecto graso/aceitoso observado (sí, no, desconocido), sin equipararlo a una medición fecal.
+- Peso en kg y evolución.
+- Historial con fecha/hora, filtros, edición y borrado confirmado.
+- Los documentos archivados por la versión anterior se conservan en el historial y en las copias; se ha eliminado la interfaz de subida y lectura de informes.
 
-Documentación del envío de PDF: [OpenRouter PDF inputs](https://openrouter.ai/docs/guides/overview/multimodal/pdfs).
+## Analíticas y revisión de pauta
 
-## Almacenamiento y copias
+El resumen por fechas reúne comidas, grasa estimada, tomas, Bristol y peso. La IA recibe el resumen, las observaciones y los últimos 300 registros detallados del periodo; no recibe fotos ni documentos archivados. Puede elaborar observaciones, señalar datos faltantes y preparar una revisión de pauta para el profesional, citando registros reales.
 
-El diario se guarda en **IndexedDB**, base `rubykreon-diary`, dentro del navegador del móvil. No hay cuentas, sincronización ni servidor de historial. Los originales se almacenan junto con cada registro. La app solicita almacenamiento persistente cuando el navegador lo permite y se guarda un registro.
+Se aporta al LLM una referencia identificada de la [ficha técnica de Kreon 35.000, AEMPS, apartados 4.2 y 4.4](https://cima.aemps.es/cima/dochtml/ft/83862/FT_83862.html), revisada en julio de 2026. Sus rangos y criterios poblacionales no equivalen a una prescripción individual ni a un algoritmo Bristol → UI. La ficha indica individualización, seguimiento del estado nutricional y ajustes supervisados.
 
-Exporta copias con regularidad: borrar los datos del navegador, cambiar de dispositivo o usar otro perfil no conserva el historial. Guarda la copia en un lugar adecuado para tus datos personales. El service worker conserva los archivos de la aplicación para abrirla sin conexión después de la primera carga; la IA requiere conexión.
+El contexto opcional incluye edad, diagnóstico indicado por el profesional y el último peso registrado hasta el final del periodo. Sin edad, diagnóstico, peso o pauta, la revisión se marca como insuficiente. Las respuestas con cantidades nuevas de tratamiento o referencias a registros inexistentes se rechazan. El resultado no autoriza una nueva dosis: los ajustes requieren valoración profesional.
+
+Los análisis pueden guardarse en el diario y consultarse desde **Análisis guardados**.
+
+## Regresión lineal local
+
+El modelo exploratorio predice **UI registradas por comida**, no la dosis terapéutica óptima. Las dosis tomadas son etiquetas observacionales; no demuestran eficacia ni seguridad.
+
+Variables:
+
+1. Grasa estimada de la comida (g).
+2. Último peso registrado antes de la comida (kg).
+3. Bristol medio de las deposiciones de las 48 horas previas.
+4. Proporción de aspecto graso entre las observaciones conocidas de esas 48 horas.
+5. Última toma registrada antes de la comida (UI).
+
+Se necesita una asociación explícita entre toma y comida. Varias tomas asociadas a la misma comida se suman como una sola etiqueta. Se excluyen filas sin análisis de grasa, sin antecedentes completos o con tomas anteriores a la hora de la comida. Los desconocidos no se convierten en ceros ni se emparejan automáticamente comidas y tomas.
+
+La regresión usa mínimos cuadrados con intercepto y QR reortogonalizado. Las variables constantes o colineales se omiten y se muestran como tales. El mínimo operativo de la app es de 30 comidas completas; **no es un umbral de validación clínica**.
+
+El historial completo se separa cronológicamente: 80 % inicial para entrenamiento y 20 % posterior para evaluación. Se excluyen del entrenamiento las etiquetas que aún no estaban disponibles cuando comenzó la evaluación. Medias, escalas y coeficientes se ajustan solo con entrenamiento. La interfaz muestra MAE, RMSE y R², y compara el error con usar la media del entrenamiento o la última toma. R² se marca como no calculable si el objetivo de validación es constante.
+
+Una predicción fuera del rango de entrenamiento se señala como extrapolación. No se redondea a una toma, no genera cápsulas ni actualiza la pauta. El modelo se entrena en el navegador sin enviar datos y debe reentrenarse al recargar o cambiar los registros. Los coeficientes no prueban efectos causales; Bristol es una escala ordinal y las grasas de las fotos son estimaciones.
+
+## IA y almacenamiento
+
+Obtén una clave en [OpenRouter](https://openrouter.ai/settings/keys) y guárdala en la app. Se conserva en `localStorage` (nombre `gai_key` por compatibilidad) y se envía a OpenRouter para autenticar las peticiones. Se usa `meta-llama/llama-4-maverick` para fotos y analíticas del diario. La regresión no necesita clave ni conexión.
+
+El historial se guarda en IndexedDB (`rubykreon-diary`) dentro de ese navegador y móvil, sin cuentas ni sincronización. El service worker permite abrir y usar el diario sin conexión después de la primera carga. La IA requiere conexión y puede consumir saldo.
+
+Exporta copias del diario con regularidad. Incluyen registros, análisis guardados y originales de la versión anterior; no incluyen API key, pauta, contexto clínico ni un modelo entrenado. En otro teléfono debes volver a introducir tu pauta y contexto. La importación valida todos los registros antes de escribir y omite IDs existentes. Límite: 200 MB y 10.000 registros.
 
 ## Desarrollo y pruebas
 
-Frontend HTML, CSS y JavaScript sin dependencias en producción:
+Frontend HTML/CSS/JS sin dependencias en producción:
 
-- `index.html`: captura y análisis de comidas, configuración e instalación.
-- `diary.js`: registros, IndexedDB, extracción de informes, historial y copias.
-- `diary.css`: formularios y vistas del diario.
-- `sw.js`: caché de la PWA.
-
-Vista previa local (solo sirve los archivos públicos de la app):
+- `index.html`: comidas, cámara, configuración e instalación.
+- `diary.js`: IndexedDB, formularios, historial y copias.
+- `analytics.js`: resumen, revisión con LLM y combinación según pauta prescrita.
+- `regression.js`: dataset temporal, regresión, validación y predicción exploratoria.
+- `diary.css`, `sw.js`: estilos y caché PWA.
 
 ```bash
 python3 tests/serve_app.py
 ```
 
-Abre `http://127.0.0.1:8765/RubyKreon_App/`.
-
-Pruebas con Playwright y Chrome, en otro terminal:
+Abre `http://127.0.0.1:8765/RubyKreon_App/`. En otro terminal:
 
 ```bash
 python3 -m pip install playwright
 RUBYKREON_TEST_URL=http://127.0.0.1:8765/RubyKreon_App/ python3 tests/test_diary_browser.py
 ```
 
-En otros sistemas, configura `RUBYKREON_CHROME` con la ruta de Chrome o instala Chromium con `playwright install chromium`. Las pruebas usan archivos sintéticos y simulan las respuestas de IA; no requieren clave real ni consumen saldo.
+En otros sistemas configura `RUBYKREON_CHROME` o instala Chromium con `playwright install chromium`. Las pruebas usan historia sintética y respuestas de IA simuladas, sin saldo ni datos reales. Verifican ajuste matemático, separación temporal, etiquetas tardías, colinealidad, persistencia, compatibilidad de copias, aislamiento de la pauta y uso sin conexión. No constituyen validación clínica ni evalúan el rendimiento en pacientes reales.
 
-La publicación se realiza mediante `.github/workflows/deploy.yml` al subir cambios a `main`.
+Se publica con `.github/workflows/deploy.yml` al subir a `main`.
 
 ## Aviso médico
 
-La estimación de alimentos y dosis es orientativa y no sustituye la pauta prescrita ni el criterio sanitario. Los parámetros configurables del cálculo deben revisarse con el profesional correspondiente. El diario de tomas registra lo introducido por el usuario y no modifica su tratamiento.
+El diario y sus modelos no sustituyen la pauta prescrita ni la valoración sanitaria. No utilices la predicción estadística como indicación para aumentar o reducir Kreon.
 
 ## Licencia
 

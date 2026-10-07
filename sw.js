@@ -1,8 +1,10 @@
-const CACHE_NAME = 'rubykreon-v4';
+const CACHE_NAME = 'rubykreon-v5';
 const ASSETS = [
   '/RubyKreon_App/',
   '/RubyKreon_App/index.html',
   '/RubyKreon_App/diary.js',
+  '/RubyKreon_App/analytics.js',
+  '/RubyKreon_App/regression.js',
   '/RubyKreon_App/diary.css',
   '/RubyKreon_App/manifest.json',
   '/RubyKreon_App/icons/icon-192.png',

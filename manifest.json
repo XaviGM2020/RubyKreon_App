@@ -1,7 +1,7 @@
 {
   "name": "RubyKreon — Diario de salud",
   "short_name": "RubyKreon",
-  "description": "Diario de comidas, tomas de Kreon, deposiciones, peso e informes de analíticas",
+  "description": "Diario de comidas, tomas de Kreon, Bristol y peso con análisis de los registros",
   "start_url": "/RubyKreon_App/",
   "display": "standalone",
   "background_color": "#0f1117",
