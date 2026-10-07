@@ -32,10 +32,7 @@
     if (!Number.isFinite(new Date(profile.updatedAt).getTime())) throw new Error('La data de la pauta no és vàlida.');
     return { mealUI, snackUI, available: STRENGTHS.filter(n => profile.available.includes(n)), confirmed: true, updatedAt: new Date(profile.updatedAt).toISOString() };
   }
-  function profile() {
-    try { return normalizeProfile(JSON.parse(localStorage.getItem(PROFILE_KEY))); }
-    catch { return null; }
-  }
+  function profile() { return null; }
   function clinicalContext() {
     try {
       const stored = JSON.parse(localStorage.getItem(CLINICAL_KEY)) || {};
@@ -71,13 +68,8 @@
     if (!Number.isFinite(new Date(value.regimenUpdatedAt).getTime())) throw new Error('La combinació no té una pauta registrada.');
     return { targetUI, totalUI, capsules, basis: 'pauta prescrita', regimenUpdatedAt: new Date(value.regimenUpdatedAt).toISOString() };
   }
-  function suggestForMeal(kind = 'meal') {
-    const prescription = profile();
-    if (!prescription) return null;
-    const targetUI = kind === 'snack' ? prescription.snackUI : prescription.mealUI;
-    const capsules = capsuleCombination(targetUI, prescription.available);
-    return capsules ? normalizeSuggestion({ targetUI, capsules, regimenUpdatedAt: prescription.updatedAt }) : null;
-  }
+  // Retired prescriptions must never contribute to new meal records.
+  function suggestForMeal() { return null; }
   const SIMULATION_KEY = 'rubykreon-demo-ui-per-gram';
   function simulationFactor() {
     const input = $('simulation-ui-per-gram');
@@ -129,22 +121,8 @@
     }
     $('aemps-reference-combinations').innerHTML = `<table><caption>Ejemplos de repartiment exacte en càpsules de 10.000, 25.000 i 35.000 UI</caption><thead><tr><th>Total UI de lipasa</th><th>Combinació</th><th>Nombre de càpsules</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
   }
-  function renderCapsules() {
-    const prescription = profile(), kind = $('meal-kind').value;
-    const suggestion = suggestForMeal(kind);
-    $('use-capsules').hidden = !suggestion;
-    $('capsule-breakdown').hidden = !suggestion;
-    $('capsule-breakdown').innerHTML = suggestion ? `<table><caption>Càpsules segons la pauta prescrita desada</caption><thead><tr><th>UI de lipasa per càpsula</th><th>Càpsules</th><th>Subtotal UI</th></tr></thead><tbody>${STRENGTHS.filter(strength => suggestion.capsules[strength] > 0).map(strength => `<tr><td>${(strength * 1000).toLocaleString('ca-ES')}</td><td>${suggestion.capsules[strength]}</td><td>${(strength * 1000 * suggestion.capsules[strength]).toLocaleString('ca-ES')}</td></tr>`).join('')}</tbody><tfoot><tr><th>Total UI de lipasa</th><td>${Object.values(suggestion.capsules).reduce((sum, count) => sum + count, 0)}</td><td>${suggestion.totalUI.toLocaleString('ca-ES')}</td></tr></tfoot></table><p class="help">La combinació correspon a la teva pauta prescrita. El greix estimat del plat no modifica automàticament aquesta dosi.</p>` : '';
-    if (!prescription) {
-      $('capsule-details').textContent = '';
-    } else if (kind === 'snack' && prescription.snackUI == null) {
-      $('capsule-details').textContent = 'No hi ha una pauta per refrigeris desada. Consulta i introdueix la indicada pel teu professional; no s’aplica automàticament la d’un àpat principal.';
-    } else if (!suggestion) {
-      $('capsule-details').textContent = 'No es pot obtenir exactament la dosi prescrita amb les presentacions seleccionades. No s’arrodoneix ni s’augmenta la dosi: consulta quina presentació o combinació correspon.';
-    } else {
-      $('capsule-details').textContent = `${combinationText(suggestion.capsules)} = ${suggestion.totalUI.toLocaleString('ca-ES')} UI. Correspon a la pauta que has desat per ${kind === 'snack' ? 'refrigeris' : 'àpats principals'}. No es registra com a presa fins que desis una presa.`;
-    }
-  }
+  // Kept for existing meal-screen callers; prescription UI has been removed.
+  function renderCapsules() {}
 
   function selectEntries(records, from, to) {
     if (!validDay(from) || !validDay(to) || from > to) throw new Error('Selecciona un període vàlid, amb la data inicial anterior o igual a la final.');
@@ -329,15 +307,9 @@
   }
   let currentRequestSignature = null;
   function init() {
+    localStorage.removeItem(PROFILE_KEY);
     initialized = true;
-    $('use-capsules').addEventListener('click', () => {
-      const suggestion = suggestForMeal($('meal-kind').value);
-      if (suggestion) {
-        $('settings-dialog').close();
-        window.RubyDiary.prepareTakenDose(suggestion.capsules);
-      }
-    });
-    initSimulation(); renderAempsReference(); renderCapsules(); renderCharts();
+    initSimulation(); renderAempsReference(); renderCharts();
   }
   window.RubyAnalytics = { init, renderSimulation, dataChanged, renderCapsules, suggestForMeal, capsuleCombination, combinationText, normalizeProfile, normalizeSuggestion, normalizeNarrative, normalizeReport, selectEntries, summarize, analysisRequest };
 })();
