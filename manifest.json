@@ -1,7 +1,7 @@
 {
-  "name": "RubyKreon — Dosis Kreon",
+  "name": "RubyKreon — Diario de salud",
   "short_name": "RubyKreon",
-  "description": "Analiza la grasa de tu plato con IA y calcula la dosis exacta de Kreon",
+  "description": "Diario de comidas, tomas de Kreon, deposiciones, peso e informes de analíticas",
   "start_url": "/RubyKreon_App/",
   "display": "standalone",
   "background_color": "#0f1117",

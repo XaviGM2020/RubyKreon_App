@@ -1,0 +1,51 @@
+[hidden] { display: none !important; }
+.app-screen { display: flex; flex-direction: column; gap: 20px; }
+.diary-tabs { display: flex; gap: 8px; position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 5; }
+.diary-tabs button { flex: 1; padding: 12px 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 10px; cursor: pointer; font: inherit; font-size: .85rem; }
+.diary-tabs button[aria-pressed=true] { border-color: var(--accent); color: var(--accent); }
+#diary-status { font-size: .9rem; line-height: 1.5; color: var(--accent2); overflow-wrap: anywhere; }
+#diary-status:empty { display: none; }
+#diary-status.error { color: var(--warn); }
+.diary-form { display: flex; flex-direction: column; gap: 14px; }
+.diary-form h2, .timeline h2, #entry-editor h2 { font-size: 1.1rem; }
+.diary-form label, .diary-filter label { display: flex; flex-direction: column; gap: 6px; font-size: .85rem; }
+.diary-form input, .diary-form textarea, .diary-form select, .diary-filter input, .diary-filter select {
+  width: 100%; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit;
+}
+.diary-form input[type=checkbox] { width: auto; }
+.diary-form .check-label { flex-direction: row; align-items: flex-start; }
+.diary-form input:focus-visible, .diary-form textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+.help { color: #a1a8b6; font-size: .8rem; line-height: 1.6; }
+.help a { color: var(--accent2); }
+.diary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.diary-filter { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+.attachment-list { display: flex; flex-wrap: wrap; gap: 10px; }
+.attachment-list figure { width: 90px; font-size: .7rem; overflow-wrap: anywhere; }
+.attachment-list img { width: 90px; height: 80px; object-fit: cover; border-radius: 8px; }
+.attachment-list button { margin-top: 5px; }
+.timeline { display: flex; flex-direction: column; gap: 14px; }
+.timeline article { border-left: 3px solid var(--accent2); padding: 14px 16px; background: var(--bg); border-radius: 0 10px 10px 0; overflow-wrap: anywhere; }
+.timeline h3 { font-size: .95rem; margin: 6px 0; }
+.timeline time, .timeline .entry-kind { font-size: .75rem; color: #a1a8b6; }
+.timeline p { font-size: .85rem; line-height: 1.6; white-space: pre-wrap; }
+.timeline details { margin-top: 12px; }
+.timeline summary { cursor: pointer; font-size: .85rem; color: var(--accent2); }
+.timeline a { color: var(--accent2); }
+.timeline .entry-photo { max-width: 100%; max-height: 240px; border-radius: 8px; margin: 10px 0; }
+.diary-table-wrap { overflow-x: auto; }
+.diary-table { width: 100%; border-collapse: collapse; font-size: .8rem; margin: 14px 0; text-align: left; }
+.diary-table th, .diary-table td { padding: 9px 6px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.lab-marker { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.lab-marker .diary-grid { grid-template-columns: 1fr 1fr; }
+.lab-marker-list { display: flex; flex-direction: column; gap: 10px; }
+.small-btn { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--surface); color: var(--text); cursor: pointer; font: inherit; font-size: .8rem; }
+.small-btn.danger { color: #fb923c; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+#entry-editor { margin: auto; width: min(94vw, 640px); max-height: 90vh; overflow-y: auto; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
+#entry-editor::backdrop { background: #000b; }
+@media (max-width: 420px) {
+  main { padding: 20px 14px 90px; }
+  .card { padding: 18px; }
+  .diary-filter { grid-template-columns: 1fr; }
+  .diary-tabs button { font-size: .78rem; }
+}
