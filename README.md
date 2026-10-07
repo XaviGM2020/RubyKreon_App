@@ -11,7 +11,7 @@ App instalable para comidas, tomas de Kreon, deposiciones Bristol y peso. **Anal
 
 ## Comidas y cápsulas
 
-La cámara del móvil conserva el archivo recibido sin filtros. Puedes guardar descripción, gramos, ingredientes, observaciones y hasta cuatro fotos. El botón se habilita al escribir una descripción; si falta la clave de IA, abre Ajustes para introducirla. La IA estima el contenido nutricional a partir de la descripción y los ingredientes, con fotos opcionales. Sin fotos, indica cantidades y aceite añadido; si faltan cantidades, la IA debe explicar sus supuestos y reducir la confianza.
+La cámara del móvil conserva el archivo recibido sin filtros. La pestaña Comida contiene una sola descripción y hasta cuatro fotos, cargadas juntas o añadidas desde la cámara. La fecha y hora se guardan automáticamente al registrar la comida. Cantidades, ingredientes y observaciones pueden escribirse en el mismo campo. El botón se habilita al escribir una descripción; si falta la clave de IA, abre Ajustes para introducirla. La IA estima el contenido nutricional a partir de la descripción, con fotos opcionales. Sin fotos, indica cantidades y aceite añadido; si faltan cantidades, la IA debe explicar sus supuestos y reducir la confianza.
 
 Se han eliminado de Comida los parámetros de medicamento y la fórmula automática basada en UI/g de grasa. No se utilizan dosis de partida inventadas ni se transforma Bristol en una dosis.
 
@@ -106,3 +106,5 @@ Enlace único de instalación y actualizaciones: https://xavigm2020.github.io/Ru
 El prototipo muestra tras cada análisis la referencia AEMPS de 25.000–80.000 UI por comida para adolescentes/adultos con IPE por causas distintas de fibrosis quística, con enlace a la ficha vigente. Una tabla de ejemplos en pasos de 5.000 UI calcula repartos exactos con el mínimo de cápsulas de 10.000/25.000/35.000; no elige dosis, no usa la grasa para asignarla, no modifica la pauta y no registra tomas.
 
 La simulación del prototipo multiplica la grasa estimada por un factor editable, inicialmente 1.000 UI/g recuperado del código antiguo (no una pauta AEMPS). Guarda el factor bajo `rubykreon-demo-ui-per-gram`, separado de las prescripciones. Muestra total y reparto mínimo exacto en cápsulas enteras si es representable; no redondea, no aplica límites clínicos, no modifica pautas, no registra dosis y no alimenta la regresión ni la revisión clínica. No usar para decidir tomas reales.
+
+La pestaña Comida muestra solo fotos, descripción, botón de análisis y resultados. El factor de simulación, la pauta prescrita y la referencia AEMPS se encuentran en Ajustes. Las fotos se añaden a la selección existente (hasta 4 / 20 MB) y se pueden quitar individualmente; cualquier cambio invalida el análisis anterior.

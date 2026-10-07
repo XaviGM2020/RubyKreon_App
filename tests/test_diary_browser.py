@@ -91,7 +91,7 @@ def run():
         page.locator('#analyze-btn').click(); expect(page.locator('#results')).to_be_visible()
         content=requests[-1]['messages'][0]['content']
         assert len(content)==1 and content[0]['type']=='text'
-        expect(page.locator('#aemps-reference-card')).to_be_visible()
+        expect(page.locator('#aemps-reference-card')).not_to_be_visible()
         assert page.locator('#aemps-reference-combinations tbody tr').count()==12
         reference=page.locator('#aemps-reference-combinations tbody tr').all_text_contents()
         assert any('25.0001 cápsula de 25.000 UI1' in row for row in reference)
@@ -99,6 +99,8 @@ def run():
         assert page.evaluate('RubyAnalytics.suggestForMeal()') is None
         expect(page.locator('#simulation-result')).to_contain_text('12.500 UI')
         expect(page.locator('#simulation-capsules')).to_contain_text('no tiene una combinación exacta')
+        page.get_by_role('button',name='Ajustes',exact=True).click()
+        page.locator('#simulation-settings > summary').click()
         page.locator('#simulation-ui-per-gram').fill('2000')
         expect(page.locator('#simulation-result')).to_contain_text('25.000 UI')
         expect(page.locator('#simulation-capsules tbody tr')).to_have_count(1)
@@ -109,20 +111,31 @@ def run():
         page.locator('#simulation-ui-per-gram').fill('0')
         expect(page.locator('#simulation-capsules tbody tr')).to_have_count(0)
         page.locator('#simulation-ui-per-gram').fill('2000')
+        page.get_by_role('button',name='Cerrar ajustes').click()
         assert '150 g de arroz cocido' in content[0]['text']
         page.locator('#meal-title').fill(' ')
         expect(page.locator('#analyze-btn')).to_be_disabled()
         expect(page.locator('#results')).not_to_be_visible()
-        page.locator('#file-input').set_input_files({'name':'plato.png','mimeType':'image/png','buffer':PNG})
-        page.locator('#meal-title').fill('Arroz con pollo'); page.locator('#meal-grams').fill('250')
-        page.locator('#meal-ingredients').fill('150 g de arroz, 100 g de pollo')
-        page.locator('#meal-extra').set_input_files({'name':'ingredientes.png','mimeType':'image/png','buffer':PNG})
-        expect(page.locator('#meal-extra-list figure')).to_have_count(1)
+        assert page.locator('#meal-form textarea').count()==1
+        assert page.locator('#meal-form input:not([type=hidden])').count()==0
+        page.locator('#file-input').set_input_files([
+            {'name':'plato.png','mimeType':'image/png','buffer':PNG},
+            {'name':'ingredientes.png','mimeType':'image/png','buffer':PNG}])
+        expect(page.locator('#meal-extra-list figure')).to_have_count(2)
+        page.evaluate("value => setImage('data:image/png;base64,' + value, 'image/png')",base64.b64encode(PNG).decode())
+        expect(page.locator('#meal-extra-list figure')).to_have_count(3)
+        page.locator('#meal-extra-list [data-remove-photo="2"]').click()
+        expect(page.locator('#meal-extra-list figure')).to_have_count(2)
+        page.locator('#file-input').set_input_files([{'name':f'extra{i}.png','mimeType':'image/png','buffer':PNG} for i in range(3)])
+        expect(page.locator('#diary-status')).to_have_class('error')
+        expect(page.locator('#meal-extra-list figure')).to_have_count(2)
+        page.locator('#meal-title').fill('Arroz con pollo: 150 g de arroz y 100 g de pollo')
         page.locator('#analyze-btn').click(); expect(page.locator('#results')).to_be_visible()
         assert len(requests[-1]['messages'][0]['content'])==3
         page.locator('#save-meal').click(); count(page,1)
         meal=stored(page)[0]; assert meal['analysis']['dose'] is None and meal['suggestion'] is None
         assert len(meal['photos'])==2
+        assert abs((datetime.now(timezone.utc)-datetime.fromisoformat(meal['timestamp'].replace('Z','+00:00'))).total_seconds()) < 120
         print('PASS: removed medicine parameters and laboratory UI; meals work without an invented dose')
 
         page.locator('[data-screen="lab"]').click()
@@ -134,7 +147,9 @@ def run():
         expect(page.locator('#capsule-details')).to_contain_text('3 cápsulas de 10.000')
         expect(page.locator('#capsule-details')).to_contain_text('1 cápsula de 35.000')
         expect(page.locator('#capsule-breakdown')).to_contain_text('65.000')
-        page.locator('#meal-kind').select_option('snack'); expect(page.locator('#capsule-details')).to_contain_text('1 cápsula de 25.000')
+        page.get_by_role('button',name='Ajustes',exact=True).click()
+        page.locator('#prescription-settings > summary').click()
+        page.evaluate("document.getElementById('meal-kind').value='snack'; document.getElementById('meal-kind').dispatchEvent(new Event('change'))"); expect(page.locator('#capsule-details')).to_contain_text('1 cápsula de 25.000')
         page.locator('#use-capsules').click(); assert len(stored(page))==1
         page.locator('#record-meal').select_option(meal['id'])
         page.locator('#save-record').click(); count(page,2)
@@ -218,8 +233,9 @@ def run():
           const result=RubyRegression.train(rows); return {error:result.metrics.mae,omitted:result.omitted.length};
         }""")
         assert constant['error']<.01 and constant['omitted']==4
-        second.locator('[data-screen="meal"]').click(); second.locator('#meal-time').fill('2026-09-10T12:00')
+        second.locator('[data-screen="meal"]').click(); second.evaluate("document.getElementById('meal-time').value='2026-09-10T12:00'")
         second.evaluate("RubyDiary.setMealAnalysis({totalFat:20,calories:400,confidence:80,dish:'Prueba',description:'Prueba sintética'})")
+        second.evaluate("document.getElementById('meal-time').value='2026-09-10T12:00'; RubyRegression.renderPrediction()")
         expect(second.locator('#regression-prediction')).to_contain_text('Predicción del registro:')
         expect(second.locator('#capsule-details')).to_contain_text('Indica tu pauta prescrita')
         print('PASS: linear fit against known synthetic relationship, chronological validation, future-data exclusion, collinearity handling, prediction separated from prescribing')
@@ -231,7 +247,7 @@ def run():
         second.locator('#import-diary').set_input_files({'name':'invalid.json','mimeType':'application/json','buffer':json.dumps(invalid).encode()})
         expect(second.locator('#diary-status')).to_have_class('error'); assert len(stored(second))==167
         second.evaluate('() => navigator.serviceWorker.ready'); second.reload(); second.wait_for_function('Boolean(navigator.serviceWorker.controller)')
-        assert second.evaluate("() => caches.open('rubykreon-v11').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
+        assert second.evaluate("() => caches.open('rubykreon-v12').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
         fresh.set_offline(True); second.reload(); second.locator('[data-screen="diary"]').click(); count(second,167); fresh.set_offline(False)
         assert second.evaluate('document.documentElement.scrollWidth <= innerWidth')
         assert not errors,errors

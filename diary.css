@@ -63,3 +63,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 #capsule-breakdown table, .capsule-table table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: .85rem; }
 #capsule-breakdown th, #capsule-breakdown td, .capsule-table th, .capsule-table td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--border); }
 #capsule-breakdown caption, .capsule-table caption { text-align: left; margin-bottom: 8px; }
+
+.meal-photos { display: flex; flex-direction: column; gap: 12px; }
+.meal-photos .drop-zone { padding: 18px; }
+.meal-photos .photo-actions { margin: 0; }
+#meal-title { resize: vertical; }
+#settings-dialog details { margin-bottom: 14px; }
+#settings-dialog summary { cursor: pointer; }
+#simulation-result { font-weight: 700; font-size: 1.05rem; }
+
+@media (max-width: 480px) { header span { display: none; } header h1 { margin-right: auto; } }

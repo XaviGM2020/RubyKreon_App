@@ -93,7 +93,7 @@
     const total = analysis.totalFat * factor;
     if (!Number.isFinite(total)) { $('simulation-result').textContent = 'El resultado no se puede representar.'; return; }
     const format = value => value.toLocaleString('es-ES', { maximumFractionDigits: 6 });
-    $('simulation-result').textContent = `Total simulado: ${format(analysis.totalFat)} g × ${format(factor)} UI/g = ${format(total)} UI de lipasa.`;
+    $('simulation-result').textContent = `Total simulado: ${format(total)} UI de lipasa (${format(analysis.totalFat)} g × ${format(factor)} UI/g).`;
     const capsules = capsuleCombination(total);
     if (total === 0) { $('simulation-capsules').textContent = 'Resultado matemático cero; no determina si necesitas medicación.'; return; }
     if (!capsules) { $('simulation-capsules').textContent = 'Este total no tiene una combinación exacta con cápsulas enteras de 10.000, 25.000 y 35.000 UI dentro del intervalo de cálculo de la demostración (hasta 1.000.000 UI). No se redondea ni se propone una cantidad para tomar.'; return; }
@@ -369,10 +369,11 @@
     });
     $('edit-meal-regimen').addEventListener('click', () => {
       document.querySelector('[data-screen="lab"]').click();
+      $('settings-dialog').close();
       const details = $('regimen-form').closest('details'); details.open = true;
       details.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('regimen-meal').focus();
     });
-    $('use-capsules').addEventListener('click', () => { const suggestion = suggestForMeal($('meal-kind').value); if (suggestion) window.RubyDiary.prepareTakenDose(suggestion.capsules); });
+    $('use-capsules').addEventListener('click', () => { const suggestion = suggestForMeal($('meal-kind').value); if (suggestion) { $('settings-dialog').close(); window.RubyDiary.prepareTakenDose(suggestion.capsules); } });
     initSimulation(); renderAempsReference(); renderCapsules(); renderSummary(); renderArchive();
   }
   window.RubyAnalytics = { init, renderSimulation, dataChanged, renderCapsules, suggestForMeal, capsuleCombination, combinationText, normalizeProfile, normalizeSuggestion, normalizeNarrative, normalizeReport, selectEntries, summarize, analysisRequest };

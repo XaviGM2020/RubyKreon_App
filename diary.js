@@ -58,7 +58,7 @@
     if (typeof record.id !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(record.id)) throw new Error('Identificador de registro no válido.');
     const item = { id: record.id, type: record.type, timestamp: dateTime(record.timestamp), notes: text(record.notes), createdAt: dateTime(record.createdAt || record.timestamp) };
     if (item.type === 'meal') {
-      item.title = text(record.title, 200).trim();
+      item.title = text(record.title, 5000).trim();
       if (!item.title) throw new Error('Introduce una descripción de la comida.');
       item.grams = record.grams == null || record.grams === '' ? null : number(record.grams, 'cantidad del plato', .1);
       item.ingredients = text(record.ingredients);
@@ -429,28 +429,42 @@
     if (entries.some(record => record.id === previous)) $('record-meal').value = previous;
   }
   function clearMealAnalysis() { mealAnalysis = null; window.RubyAnalytics?.renderSimulation(); ++revision; window.RubyRegression?.renderPrediction(); }
-  function mealContext() { return { description: $('meal-title').value, portionGrams: $('meal-grams').value, ingredients: $('meal-ingredients').value, kind: $('meal-kind').value }; }
+  function mealContext() { return { description: $('meal-title').value, kind: $('meal-kind').value }; }
+  function renderMealPhotos() { $('meal-extra-list').innerHTML = attachmentList(extraPhotos, true); checkReady(); }
+  function resetMealPhotos() {
+    ++mealFilesVersion; mealFilesReading = false; extraPhotos = []; renderMealPhotos(); clearMealAnalysis();
+  }
+  async function addMealPhotos(list) {
+    if (mealFilesReading) { status('Espera a que se carguen las fotos.', true); return; }
+    const version = ++mealFilesVersion;
+    mealFilesReading = true; clearMealAnalysis(); $('results').style.display = 'none';
+    try {
+      const files = await readFiles(list, 4 - extraPhotos.length);
+      if (version !== mealFilesVersion) return;
+      if ([...extraPhotos, ...files].reduce((sum, file) => sum + file.size, 0) > MAX_FILES_BYTES) throw new Error('Las fotos no pueden superar 20 MB en total.');
+      extraPhotos.push(...files); renderMealPhotos(); status('');
+    } catch (error) { if (version === mealFilesVersion) status(error.message, true); }
+    finally { if (version === mealFilesVersion) { mealFilesReading = false; ++revision; checkReady(); } }
+  }
+  function addMealPhotoData(photo) {
+    try {
+      if (mealFilesReading) throw new Error('Espera a que se carguen las fotos.');
+      const file = normalizeFile(photo);
+      if (extraPhotos.length >= 4) throw new Error('Una comida admite hasta 4 fotos.');
+      if (extraPhotos.reduce((sum, photo) => sum + photo.size, file.size) > MAX_FILES_BYTES) throw new Error('Las fotos no pueden superar 20 MB en total.');
+      extraPhotos.push(file); ++mealFilesVersion; clearMealAnalysis(); $('results').style.display = 'none'; renderMealPhotos(); status('');
+    } catch (error) { status(error.message, true); }
+  }
   function buildMeals() {
     $('meal-time').value = localDateTime();
-    for (const id of ['meal-title', 'meal-grams', 'meal-ingredients']) $(id).addEventListener('input', () => { clearMealAnalysis(); $('results').style.display = 'none'; checkReady(); });
+    $('meal-title').addEventListener('input', () => { clearMealAnalysis(); $('results').style.display = 'none'; checkReady(); });
     $('meal-kind').addEventListener('change', () => { clearMealAnalysis(); $('results').style.display = 'none'; window.RubyAnalytics.renderCapsules(); });
     $('meal-time').addEventListener('input', () => window.RubyRegression.renderPrediction());
-    $('meal-extra').addEventListener('change', async e => {
-      const version = ++mealFilesVersion;
-      mealFilesReading = true; clearMealAnalysis(); extraPhotos = []; checkReady();
-      $('meal-extra-list').replaceChildren(); $('results').style.display = 'none';
-      try {
-        const files = await readFiles(e.target.files, 3);
-        if (version !== mealFilesVersion) return;
-        extraPhotos = files; $('meal-extra-list').innerHTML = attachmentList(extraPhotos, true);
-      } catch (error) { if (version === mealFilesVersion) status(error.message, true); }
-      finally { if (version === mealFilesVersion) { mealFilesReading = false; ++revision; checkReady(); } }
-    });
     $('meal-extra-list').addEventListener('click', e => {
       const button = e.target.closest('[data-remove-photo]');
       if (!button) return;
-      extraPhotos.splice(Number(button.dataset.removePhoto), 1); clearMealAnalysis();
-      $('results').style.display = 'none'; $('meal-extra-list').innerHTML = attachmentList(extraPhotos, true); checkReady();
+      extraPhotos.splice(Number(button.dataset.removePhoto), 1); ++mealFilesVersion; mealFilesReading = false; clearMealAnalysis();
+      $('results').style.display = 'none'; renderMealPhotos();
     });
     $('meal-form').addEventListener('submit', e => {
       e.preventDefault();
@@ -458,7 +472,7 @@
         if (mealFilesReading) throw new Error('Espera a que se carguen las fotos.');
         const photos = [...extraPhotos];
         if (imageBase64) photos.unshift({ name: 'plato.' + (imageMime.split('/')[1] || 'jpg'), mime: imageMime, dataUrl: `data:${imageMime};base64,${imageBase64}` });
-        await save({ ...newRecord('meal', $('meal-time').value, $('meal-notes').value), title: $('meal-title').value, grams: $('meal-grams').value, ingredients: $('meal-ingredients').value, kind: $('meal-kind').value, suggestion: window.RubyAnalytics.suggestForMeal($('meal-kind').value), photos, analysis: mealAnalysis });
+        await save({ ...newRecord('meal', localDateTime(), ''), title: $('meal-title').value.trim() || mealAnalysis?.dish || 'Comida', grams: null, ingredients: '', kind: $('meal-kind').value, suggestion: window.RubyAnalytics.suggestForMeal($('meal-kind').value), photos, analysis: mealAnalysis });
         $('meal-form').reset(); $('meal-time').value = localDateTime();
         ++mealFilesVersion; extraPhotos = []; mealFilesReading = false;
         $('meal-extra-list').replaceChildren(); resetImage(); window.RubyAnalytics.renderCapsules(); screen('diary');
@@ -467,6 +481,7 @@
   }
 
   window.RubyDiary = {
+    addMealPhotos, addMealPhotoData, resetMealPhotos,
     getEntries: () => entries,
     getMealAnalysis: () => mealAnalysis,
     saveReview: report => save({ ...newRecord('review', new Date().toISOString()), report }),
@@ -485,6 +500,7 @@
       return extraPhotos;
     },
     setMealAnalysis(fat) {
+      $('meal-time').value = localDateTime();
       mealAnalysis = { ...fat, dose: null };
       window.RubyAnalytics.renderSimulation();
       window.RubyRegression.renderPrediction();
