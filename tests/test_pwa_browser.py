@@ -23,7 +23,7 @@ with tempfile.TemporaryDirectory(prefix='rubykreon-pwa-') as directory:
         destination.write_bytes((ROOT/name).read_bytes())
     def release(version):
         for name in ['index.html','sw.js']:
-            (target/name).write_text((ROOT/name).read_text().replace('rubykreon-v16',f'rubykreon-v{version}'))
+            (target/name).write_text((ROOT/name).read_text().replace('rubykreon-v17',f'rubykreon-v{version}'))
     server=ThreadingHTTPServer(('127.0.0.1',0),functools.partial(QuietHandler,directory=directory))
     threading.Thread(target=server.serve_forever,daemon=True).start()
     url=f'http://127.0.0.1:{server.server_port}/RubyKreon_App/'
@@ -41,19 +41,19 @@ with tempfile.TemporaryDirectory(prefix='rubykreon-pwa-') as directory:
             dirty.wait_for_function('!!appRegistration')
             clean.evaluate('appRegistration.update()')
             dirty.evaluate('appRegistration.update()')
-            release(17)
+            release(18)
             clean.evaluate('appRegistration.update()')
-            clean.wait_for_function("APP_VERSION === 'rubykreon-v17'", timeout=15000)
-            dirty.get_by_role('button',name='Ajustes',exact=True).click()
+            clean.wait_for_function("APP_VERSION === 'rubykreon-v18'", timeout=15000)
+            dirty.get_by_role('button',name='Ajustos',exact=True).click()
             expect(dirty.locator('#apply-app-update')).to_be_visible()
-            assert dirty.evaluate('APP_VERSION')=='rubykreon-v16'
+            assert dirty.evaluate('APP_VERSION')=='rubykreon-v17'
             expect(dirty.locator('#meal-title')).to_have_value('Texto sin guardar')
             assert clean.evaluate("localStorage.getItem('gai_key')")=='synthetic-test-key'
             dirty.evaluate('location.reload()')
-            dirty.wait_for_function("APP_VERSION === 'rubykreon-v17'")
+            dirty.wait_for_function("APP_VERSION === 'rubykreon-v18'")
             assert dirty.evaluate("localStorage.getItem('gai_key')")=='synthetic-test-key'
             # Older workers must not trigger a reload loop.
-            dirty.evaluate("applyAppVersion('rubykreon-v16')")
+            dirty.evaluate("applyAppVersion('rubykreon-v17')")
             assert dirty.evaluate('updateReloading') is False
             # Installation requires a click and hides the affordance after installation.
             dirty.evaluate("""() => {
@@ -71,7 +71,7 @@ with tempfile.TemporaryDirectory(prefix='rubykreon-pwa-') as directory:
             # Fixed URL, including old query links, remains available offline.
             context.set_offline(True); clean.goto(url+'?old-link=1')
             expect(clean.locator('#meal-form')).to_be_visible()
-            assert clean.evaluate('APP_VERSION')=='rubykreon-v17'
+            assert clean.evaluate('APP_VERSION')=='rubykreon-v18'
             browser.close()
             print('PASS: real automatic upgrade, draft protection, persistent key, no reload loop, installation gesture, offline navigation')
     finally: server.shutdown(); server.server_close()

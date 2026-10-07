@@ -1,7 +1,7 @@
 {
-  "name": "RubyKreon — Diario de salud",
+  "name": "RubyKreon — Diari de salut",
   "short_name": "RubyKreon",
-  "description": "Diario de comidas, tomas de Kreon, Bristol y peso con análisis de los registros",
+  "description": "Registre d’àpats, preses de Kreon, Bristol i pes amb gràfiques de l’historial",
   "start_url": "/RubyKreon_App/",
   "display": "standalone",
   "background_color": "#0f1117",
@@ -25,7 +25,7 @@
     "medical",
     "health"
   ],
-  "lang": "es",
+  "lang": "ca",
   "id": "/RubyKreon_App/",
   "scope": "/RubyKreon_App/"
 }

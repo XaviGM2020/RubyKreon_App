@@ -4,10 +4,10 @@
   const $ = id => document.getElementById(id);
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const MAX_FILES_BYTES = 20 * 1024 * 1024;
-  const TYPES = { meal: '🍽️ Comida', kreon: '💊 Kreon tomado', stool: '🚽 Deposición', weight: '⚖️ Peso', lab: '📄 Documento anterior', review: '🧠 Análisis del diario' };
+  const TYPES = { meal: '🍽️ Menjar', kreon: '💊 Kreon pres', stool: '🚽 Deposició', weight: '⚖️ Pes', lab: '📄 Document anterior', review: '🧠 Anàlisi del diari' };
   const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   // Descriptive labels based on the NHS Bristol chart; no diagnostic interpretation.
-  const BRISTOL = ['Tipo 1 · bolas duras separadas', 'Tipo 2 · alargada, con bultos', 'Tipo 3 · alargada, con grietas', 'Tipo 4 · alargada, lisa y blanda', 'Tipo 5 · fragmentos blandos definidos', 'Tipo 6 · fragmentos pastosos e irregulares', 'Tipo 7 · líquida, sin fragmentos sólidos'];
+  const BRISTOL = ['Tipus 1 · boles dures separades', 'Tipus 2 · allargada, amb grumolls', 'Tipus 3 · allargada, amb esquerdes', 'Tipus 4 · allargada, llisa i tova', 'Tipus 5 · fragments tous definits', 'Tipus 6 · fragments pastosos i irregulars', 'Tipus 7 · líquida, sense fragments sòlids'];
   let dbPromise, entries = [], extraPhotos = [], mealAnalysis = null;
   let revision = 0;
   let mealFilesReading = false, mealFilesVersion = 0;
@@ -22,86 +22,86 @@
     return shifted.toISOString().slice(0, 16);
   }
   function dateTime(value) {
-    if (!value || !Number.isFinite(new Date(value).getTime())) throw new Error('Introduce una fecha y hora válidas.');
+    if (!value || !Number.isFinite(new Date(value).getTime())) throw new Error('Introdueix una data i hora vàlides.');
     return new Date(value).toISOString();
   }
   function number(value, label, min = 0, integer = false) {
-    if (value === '' || value == null) throw new Error(`Introduce ${label}.`);
+    if (value === '' || value == null) throw new Error(`Introdueix ${label}.`);
     const n = Number(value);
-    if (!Number.isFinite(n) || n < min || (integer && !Number.isSafeInteger(n))) throw new Error(`El valor de ${label} no es válido.`);
+    if (!Number.isFinite(n) || n < min || (integer && !Number.isSafeInteger(n))) throw new Error(`El valor de ${label} no és vàlid.`);
     return n;
   }
   function text(value, limit = 5000) {
-    if (value != null && typeof value !== 'string') throw new Error('El registro contiene texto no válido.');
+    if (value != null && typeof value !== 'string') throw new Error('El registre conté text no vàlid.');
     return (value || '').slice(0, limit);
   }
   function normalizeFile(file, pdf = false) {
     const mime = file?.mime;
-    if (!IMAGE_TYPES.includes(mime) && !(pdf && mime === 'application/pdf')) throw new Error('Formato de archivo no compatible. Usa PDF, JPG, PNG, WEBP o GIF.');
-    if (typeof file.dataUrl !== 'string' || !file.dataUrl.startsWith(`data:${mime};base64,`) || !/^[A-Za-z0-9+/]*={0,2}$/.test(file.dataUrl.split(',')[1] || '')) throw new Error('El archivo adjunto no es válido.');
+    if (!IMAGE_TYPES.includes(mime) && !(pdf && mime === 'application/pdf')) throw new Error('Format de fitxer no compatible. Usa PDF, JPG, PNG, WEBP o GIF.');
+    if (typeof file.dataUrl !== 'string' || !file.dataUrl.startsWith(`data:${mime};base64,`) || !/^[A-Za-z0-9+/]*={0,2}$/.test(file.dataUrl.split(',')[1] || '')) throw new Error('El fitxer adjunt no és vàlid.');
     const base64 = file.dataUrl.split(',')[1];
     const size = Math.floor(base64.length * .75) - (base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0);
-    if (!size || size > MAX_FILES_BYTES) throw new Error('El archivo supera el límite de 20 MB.');
-    return { name: text(file.name, 200) || 'documento', mime, dataUrl: file.dataUrl, size };
+    if (!size || size > MAX_FILES_BYTES) throw new Error('El fitxer supera el límit de 20 MB.');
+    return { name: text(file.name, 200) || 'document', mime, dataUrl: file.dataUrl, size };
   }
   function normalizeMarkers(markers) {
-    if (!Array.isArray(markers) || markers.length > 200) throw new Error('La analítica admite hasta 200 parámetros.');
+    if (!Array.isArray(markers) || markers.length > 200) throw new Error('L’analítica admet fins a 200 paràmetres.');
     return markers.map(marker => {
       const name = text(marker.name, 200).trim();
-      if (!name) throw new Error('Cada parámetro necesita un nombre.');
+      if (!name) throw new Error('Cada paràmetre necessita un nom.');
       const value = typeof marker.value === 'number' ? String(marker.value) : text(marker.value, 200);
-      if (!value.trim()) throw new Error(`Introduce el valor de ${name}.`);
+      if (!value.trim()) throw new Error(`Introdueix el valor de ${name}.`);
       return { name, value, unit: text(marker.unit, 100), reference: text(marker.reference, 300) };
     });
   }
   function normalizeEntry(record) {
-    if (!record || !Object.hasOwn(TYPES, record.type)) throw new Error('Tipo de registro no válido.');
-    if (typeof record.id !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(record.id)) throw new Error('Identificador de registro no válido.');
+    if (!record || !Object.hasOwn(TYPES, record.type)) throw new Error('Tipus de registre no vàlid.');
+    if (typeof record.id !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(record.id)) throw new Error('Identificador de registre no vàlid.');
     const item = { id: record.id, type: record.type, timestamp: dateTime(record.timestamp), notes: text(record.notes), createdAt: dateTime(record.createdAt || record.timestamp) };
     if (item.type === 'meal') {
       item.title = text(record.title, 5000).trim();
-      if (!item.title) throw new Error('Introduce una descripción de la comida.');
-      item.grams = record.grams == null || record.grams === '' ? null : number(record.grams, 'cantidad del plato', .1);
+      if (!item.title) throw new Error('Introdueix una descripció de l’àpat.');
+      item.grams = record.grams == null || record.grams === '' ? null : number(record.grams, 'quantitat del plat', .1);
       item.ingredients = text(record.ingredients);
       item.kind = record.kind === 'snack' ? 'snack' : 'meal';
       item.suggestion = record.suggestion ? window.RubyAnalytics.normalizeSuggestion(record.suggestion) : null;
-      if (!Array.isArray(record.photos) || record.photos.length > 4) throw new Error('Una comida admite hasta 4 fotos.');
+      if (!Array.isArray(record.photos) || record.photos.length > 4) throw new Error('Un àpat admet fins a 4 fotos.');
       item.photos = record.photos.map(photo => normalizeFile(photo));
       if (record.analysis) {
         const a = record.analysis;
         item.analysis = {
-          totalFat: number(a.totalFat, 'grasa'), saturatedFat: number(a.saturatedFat ?? 0, 'grasa saturada'),
-          calories: number(a.calories ?? 0, 'calorías'), confidence: Math.min(100, number(a.confidence ?? 0, 'confianza')),
+          totalFat: number(a.totalFat, 'greix'), saturatedFat: number(a.saturatedFat ?? 0, 'greix saturat'),
+          calories: number(a.calories ?? 0, 'calories'), confidence: Math.min(100, number(a.confidence ?? 0, 'confiança')),
           dish: text(a.dish, 200), description: text(a.description),
-          dose: a.dose ? { rounded: number(a.dose.rounded, 'estimación anterior'), unit: text(a.dose.unit, 100), med: text(a.dose.med, 100) } : null
+          dose: a.dose ? { rounded: number(a.dose.rounded, 'estimació anterior'), unit: text(a.dose.unit, 100), med: text(a.dose.med, 100) } : null
         };
       } else item.analysis = null;
     } else if (item.type === 'kreon') {
       item.capsules = {};
       item.mealId = record.mealId ? text(record.mealId, 100) : null;
-      for (const strength of [10, 25, 35]) item.capsules[strength] = number(record.capsules?.[strength] ?? 0, 'cápsulas', 0, true);
+      for (const strength of [10, 25, 35]) item.capsules[strength] = number(record.capsules?.[strength] ?? 0, 'càpsules', 0, true);
       item.totalUI = capsuleTotal(item.capsules);
-      if (!Number.isSafeInteger(item.totalUI)) throw new Error('El total de cápsulas no es válido.');
-      if (!item.totalUI) throw new Error('Introduce al menos una cápsula tomada.');
+      if (!Number.isSafeInteger(item.totalUI)) throw new Error('El total de càpsules no és vàlid.');
+      if (!item.totalUI) throw new Error('Introdueix com a mínim una càpsula presa.');
     } else if (item.type === 'stool') {
-      item.bristol = number(record.bristol, 'tipo Bristol', 1, true);
-      if (item.bristol > 7) throw new Error('La escala Bristol va del 1 al 7.');
+      item.bristol = number(record.bristol, 'tipus Bristol', 1, true);
+      if (item.bristol > 7) throw new Error('L’escala Bristol va del 1 al 7.');
       item.greasy = ['yes', 'no'].includes(record.greasy) ? record.greasy : 'unknown';
     } else if (item.type === 'weight') {
-      item.kg = number(record.kg, 'peso', .1);
+      item.kg = number(record.kg, 'pes', .1);
     } else if (item.type === 'review') {
       item.report = window.RubyAnalytics.normalizeReport(record.report);
     } else {
       item.title = text(record.title, 200).trim() || 'Analítica';
       item.markers = normalizeMarkers(record.markers || []);
-      if (!Array.isArray(record.files) || record.files.length > 6) throw new Error('Un informe admite hasta 6 archivos.');
+      if (!Array.isArray(record.files) || record.files.length > 6) throw new Error('Un informe admet fins a 6 fitxers.');
       item.files = record.files.map(file => normalizeFile(file, true));
-      if (!item.files.length) throw new Error('Adjunta el informe original.');
+      if (!item.files.length) throw new Error('Adjunta l’informe original.');
       item.reviewed = record.reviewed === true;
-      if (item.markers.length && !item.reviewed) throw new Error('Revisa los valores extraídos antes de archivarlos.');
+      if (item.markers.length && !item.reviewed) throw new Error('Revisa els valors extrets abans d’arxivar-los.');
     }
     const files = item.files || item.photos || [];
-    if (files.reduce((sum, file) => sum + file.size, 0) > MAX_FILES_BYTES) throw new Error('Los archivos del registro superan los 20 MB en total.');
+    if (files.reduce((sum, file) => sum + file.size, 0) > MAX_FILES_BYTES) throw new Error('Els fitxers del registre superen els 20 MB en total.');
     return item;
   }
   function capsuleTotal(capsules) {
@@ -110,7 +110,7 @@
 
   function database() {
     if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
-      if (!window.indexedDB) return reject(new Error('Este navegador no permite guardar el diario. Abre la app en Chrome o Safari.'));
+      if (!window.indexedDB) return reject(new Error('Aquest navegador no permet desar el diari. Obre l’app en Chrome o Safari.'));
       const request = indexedDB.open('rubykreon-diary', 1);
       request.onupgradeneeded = () => request.result.createObjectStore('entries', { keyPath: 'id' });
       request.onsuccess = () => {
@@ -119,7 +119,7 @@
         resolve(db);
       };
       request.onerror = () => reject(request.error);
-      request.onblocked = () => status('Cierra otras pestañas de RubyKreon para abrir el diario.', true);
+      request.onblocked = () => status('Tanca les altres pestanyes de RubyKreon per obrir el diari.', true);
     }).catch(error => { dbPromise = null; throw error; });
     return dbPromise;
   }
@@ -129,7 +129,7 @@
       const tx = db.transaction('entries', mode);
       let result;
       tx.oncomplete = () => resolve(result);
-      tx.onabort = () => reject(new Error(tx.error?.name === 'QuotaExceededError' ? 'No queda espacio para guardar el registro. Exporta una copia y libera espacio en el diario.' : 'No se pudo completar el guardado. Inténtalo de nuevo.'));
+      tx.onabort = () => reject(new Error(tx.error?.name === 'QuotaExceededError' ? 'no queda espai per desar el registre. Exporta una còpia i allibera espai als registres.' : 'No s’ha pogut completar el desat. Inténtalo de nou.'));
       tx.onerror = () => {};
       try {
         const request = work(tx.objectStore('entries'));
@@ -150,7 +150,7 @@
     const normalized = normalizeEntry(record);
     await transaction('readwrite', store => store.put(normalized));
     await refresh();
-    status('✓ Registro guardado en este móvil.');
+    status('✓ Registre desat en aquest mòbil.');
     return normalized;
   }
   function newRecord(type, timestamp, notes = '') {
@@ -163,18 +163,18 @@
   function field(label, id, type = 'text', attrs = '') {
     return `<label>${label}<input id="${id}" type="${type}" ${attrs}></label>`;
   }
-  function timeField(id) { return field('Fecha y hora', id, 'datetime-local', 'required'); }
-  function notesField(id) { return `<label>Observaciones<textarea id="${id}" maxlength="5000" rows="2"></textarea></label>`; }
+  function timeField(id) { return field('Data i hora', id, 'datetime-local', 'required'); }
+  function notesField(id) { return `<label>Observacions<textarea id="${id}" maxlength="5000" rows="2"></textarea></label>`; }
   function capsuleFields(prefix) {
-    return `<div class="diary-grid">${[10, 25, 35].map(n => field(`${n}.000 UI · cápsulas`, `${prefix}-${n}`, 'number', 'value="0" min="0" step="1" required')).join('')}</div><p id="${prefix}-total" class="help">Total tomado: 0 UI</p>`;
+    return `<div class="diary-grid">${[10, 25, 35].map(n => field(`${n}.000 UI · càpsules`, `${prefix}-${n}`, 'number', 'value="0" min="0" step="1" required')).join('')}</div><p id="${prefix}-total" class="help">Total pres: 0 UI</p>`;
   }
   function readCapsules(prefix) {
-    return Object.fromEntries([10, 25, 35].map(n => [n, number($(`${prefix}-${n}`).value, 'cápsulas', 0, true)]));
+    return Object.fromEntries([10, 25, 35].map(n => [n, number($(`${prefix}-${n}`).value, 'càpsules', 0, true)]));
   }
   function wireCapsules(prefix) {
     for (const n of [10, 25, 35]) $(`${prefix}-${n}`).addEventListener('input', () => {
-      try { $(`${prefix}-total`).textContent = `Total tomado: ${capsuleTotal(readCapsules(prefix)).toLocaleString('es-ES')} UI`; }
-      catch { $(`${prefix}-total`).textContent = 'Introduce números enteros de cápsulas.'; }
+      try { $(`${prefix}-total`).textContent = `Total pres: ${capsuleTotal(readCapsules(prefix)).toLocaleString('ca-ES')} UI`; }
+      catch { $(`${prefix}-total`).textContent = 'Introdueix nombres enters de càpsules.'; }
     });
   }
   async function submit(form, button, action) {
@@ -182,7 +182,7 @@
     button.disabled = true;
     try { form.querySelector('.form-feedback')?.remove(); await action(); }
     catch (error) {
-      const message = error.message || 'No se pudo completar la operación.';
+      const message = error.message || 'No s’ha pogut completar l’operació.';
       status(message, true);
       let feedback = form.querySelector('.form-feedback');
       if (!feedback) { feedback = document.createElement('p'); feedback.className = 'form-feedback help'; feedback.setAttribute('role', 'alert'); form.append(feedback); }
@@ -194,14 +194,14 @@
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+      reader.onerror = () => reject(new Error('No s’ha pogut llegir el fitxer.'));
       reader.readAsDataURL(file);
     });
   }
   async function readFiles(list, max, pdf = false) {
     const files = Array.from(list);
-    if (files.length > max) throw new Error(`Selecciona un máximo de ${max} archivos.`);
-    if (files.reduce((sum, file) => sum + file.size, 0) > MAX_FILES_BYTES) throw new Error('Los archivos no pueden superar 20 MB en total.');
+    if (files.length > max) throw new Error(`Selecciona un màxim de ${max} fitxers.`);
+    if (files.reduce((sum, file) => sum + file.size, 0) > MAX_FILES_BYTES) throw new Error('Els fitxers no poden superar 20 MB en total.');
     return Promise.all(files.map(async file => {
       const mime = file.type || (/\.pdf$/i.test(file.name) ? 'application/pdf' : '');
       if (!IMAGE_TYPES.includes(mime) && !(pdf && mime === 'application/pdf')) throw new Error('Usa PDF, JPG, PNG, WEBP o GIF.');
@@ -222,60 +222,60 @@
     download(bytes, file.name, file.mime);
   }
   function attachmentList(files, removable = false) {
-    return files.map((file, i) => `<figure>${file.mime.startsWith('image/') ? `<img src="${escape(file.dataUrl)}" alt="${escape(file.name)}">` : '📄'}<figcaption>${escape(file.name)}</figcaption>${removable ? `<button type="button" class="small-btn" data-remove-photo="${i}">Quitar</button>` : ''}</figure>`).join('');
+    return files.map((file, i) => `<figure>${file.mime.startsWith('image/') ? `<img src="${escape(file.dataUrl)}" alt="${escape(file.name)}">` : '📄'}<figcaption>${escape(file.name)}</figcaption>${removable ? `<button type="button" class="small-btn" data-remove-photo="${i}">Treure</button>` : ''}</figure>`).join('');
   }
 
   function buildDiary() {
     $('diary-screen').innerHTML = `
       <div class="card diary-form">
-        <h2>Añadir un registro</h2>
-        <label>Tipo<select id="record-type"><option value="kreon">Kreon tomado</option><option value="meal">Comida</option><option value="stool">Deposición · Bristol</option><option value="weight">Peso</option></select></label>
+        <h2>Afegir un registre</h2>
+        <label>Tipus<select id="record-type"><option value="kreon">Kreon pres</option><option value="meal">Menjar</option><option value="stool">Deposició · Bristol</option><option value="weight">Pes</option></select></label>
         <form id="record-form" class="diary-form">
           ${timeField('record-time')}
           <div id="record-kreon">${capsuleFields('record-caps')}</div>
-          <label id="record-meal-label">Comida asociada (para el modelo)<select id="record-meal"><option value="">Sin asociar</option></select></label>
-          <div id="record-stool" hidden class="diary-form"><label>Escala Bristol<select id="record-bristol">${BRISTOL.map((label, i) => `<option value="${i + 1}">${label}</option>`).join('')}</select></label><label>¿Observaste un aspecto graso o aceitoso?<select id="record-greasy"><option value="unknown">No lo sé / no observado</option><option value="yes">Sí</option><option value="no">No</option></select></label><p class="help">Es una observación, no una medición de grasa fecal.</p><p class="help" style="margin-top:8px"><a href="https://www.england.nhs.uk/wp-content/uploads/2023/07/Bristol-stool-chart-for-people-with-a-learning-disability-print-version.pdf" target="_blank" rel="noopener">Ver guía visual Bristol (NHS, en inglés)</a></p></div>
-          <div id="record-weight" hidden>${field('Peso (kg)', 'record-kg', 'number', 'min="0.1" step="0.1"')}</div>
+          <label id="record-meal-label">Menjar associat (per al model)<select id="record-meal"><option value="">Sense associar</option></select></label>
+          <div id="record-stool" hidden class="diary-form"><label>Escala Bristol<select id="record-bristol">${BRISTOL.map((label, i) => `<option value="${i + 1}">${label}</option>`).join('')}</select></label><label>Has observat un aspecte gras o oliós?<select id="record-greasy"><option value="unknown">No ho sé / no observat</option><option value="yes">Sí</option><option value="no">no</option></select></label><p class="help">És una observació, no una mesura de greix fecal.</p><p class="help" style="margin-top:8px"><a href="https://www.england.nhs.uk/wp-content/uploads/2023/07/Bristol-stool-chart-for-people-with-a-learning-disability-print-version.pdf" target="_blank" rel="noopener">Veure la guia visual Bristol (NHS, en anglès)</a></p></div>
+          <div id="record-weight" hidden>${field('Pes (kg)', 'record-kg', 'number', 'min="0.1" step="0.1"')}</div>
           ${notesField('record-notes')}
-          <p class="help">Las cápsulas de 10.000, 25.000 y 35.000 UI corresponden a las presentaciones indicadas por ti. Registra lo que has tomado según tu pauta.</p>
-          <button type="submit" id="save-record" class="btn-save">✓ Guardar registro</button>
+          <p class="help">Les càpsules de 10.000, 25.000 i 35.000 UI corresponen a les presentacions indicades per tu. Registra el que has pres segons la teva pauta.</p>
+          <button type="submit" id="save-record" class="btn-save">✓ Desar registre</button>
         </form>
       </div>
       <div class="card">
-        <h2>Línea temporal</h2>
+        <h2>Línia temporal</h2>
         <div class="diary-filter">
-          <label>Día<input id="timeline-date" type="date"></label>
-          <label>Tipo<select id="timeline-type"><option value="">Todos</option>${Object.entries(TYPES).map(([type, title]) => `<option value="${type}">${title}</option>`).join('')}</select></label>
+          <label>Dia<input id="timeline-date" type="date"></label>
+          <label>Tipus<select id="timeline-type"><option value="">Tots</option>${Object.entries(TYPES).map(([type, title]) => `<option value="${type}">${title}</option>`).join('')}</select></label>
         </div>
-        <button type="button" id="clear-filters" class="small-btn">Ver todo</button>
+        <button type="button" id="clear-filters" class="small-btn">Veure-ho tot</button>
         <div id="timeline" class="timeline" style="margin-top:14px"></div>
       </div>
       <div class="card diary-form">
-        <h2>Evolución</h2>
-        <label>Datos<select id="trend-select"><option value="weight">Peso</option></select></label>
+        <h2>Evolució</h2>
+        <label>Dades<select id="trend-select"><option value="weight">Pes</option></select></label>
         <div id="trend-table" class="diary-table-wrap"></div>
-        <p class="help">En Analíticas puedes comparar comidas, grasa estimada, tomas, Bristol y peso por día.</p>
+        <p class="help">En Analítiques pots comparar àpats, greix estimat, preses, Bristol i pes per dia.</p>
       </div>
       <div class="card diary-form">
-        <h2>Copia de seguridad</h2>
-        <p class="help">El diario y los informes se guardan solo en este navegador y móvil. Exporta una copia para conservarlos si cambias de teléfono o borras los datos del navegador. La copia incluye tus fotos e informes; no incluye la clave de API.</p>
-        <button type="button" id="export-diary" class="small-btn">Descargar copia del diario</button>
-        <label>Importar copia (.json)<input id="import-diary" type="file" accept="application/json,.json"></label>
-        <p class="help">La importación añade los registros nuevos y omite los que ya existen.</p>
+        <h2>Còpia de seguretat</h2>
+        <p class="help">El diari i els informes es desen només en aquest navegador i mòbil. Exporta una còpia per conservar-los si canvies de telèfon o esborres les dades del navegador. La còpia inclou les teves fotos i informes; no inclou la clau d’API.</p>
+        <button type="button" id="export-diary" class="small-btn">Descarregar còpia del diari</button>
+        <label>Importar còpia (.json)<input id="import-diary" type="file" accept="application/json,.json"></label>
+        <p class="help">La importació afegeix els registres nous i omite els que ya existen.</p>
       </div>`;
     const screenCards = Array.from($('diary-screen').children);
     const createDialog = $('record-dialog');
     createDialog.append(screenCards[0]);
     screenCards[0].querySelector('h2').id = 'record-dialog-title';
-    const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'small-btn'; cancel.textContent = 'Cancelar';
+    const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'small-btn'; cancel.textContent = 'Cancel·lar';
     cancel.addEventListener('click', () => createDialog.close()); $('record-form').append(cancel);
     const dialogStatus = document.createElement('p'); dialogStatus.id = 'record-status'; dialogStatus.setAttribute('role', 'status'); $('record-form').append(dialogStatus);
-    for (const [index, title] of [[2, 'Evolución del peso'], [3, 'Copia de seguridad']]) {
+    for (const [index, title] of [[2, 'Evolució del pes'], [3, 'Còpia de seguretat']]) {
       const details = document.createElement('details'); details.className = 'card'; if (index === 3) details.id = 'backup-settings';
       const summary = document.createElement('summary'); summary.textContent = title;
       details.append(summary, screenCards[index]); $('settings-dialog').append(details);
     }
-    $('diary-screen').innerHTML = '<div id="timeline" class="diary-table-wrap"></div><button id="new-record" type="button" class="btn-save">Nuevo registro</button>';
+    $('diary-screen').innerHTML = '<div id="timeline" class="diary-table-wrap"></div><button id="new-record" type="button" class="btn-save">Nou registre</button>';
     $('new-record').addEventListener('click', openNewRecord);
     $('record-time').value = localDateTime();
     const updateRecordType = () => {
@@ -298,10 +298,10 @@
         const record = newRecord(type, $('record-time').value, $('record-notes').value);
         if (type === 'kreon') { record.capsules = readCapsules('record-caps'); record.mealId = $('record-meal').value || null; }
         if (type === 'stool') { record.bristol = Number($('record-bristol').value); record.greasy = $('record-greasy').value; }
-        if (type === 'weight') record.kg = number($('record-kg').value, 'peso', .1);
+        if (type === 'weight') record.kg = number($('record-kg').value, 'pes', .1);
         await save(record);
         $('record-form').reset(); $('record-time').value = localDateTime();
-        $('record-caps-total').textContent = 'Total tomado: 0 UI'; updateRecordType();
+        $('record-caps-total').textContent = 'Total pres: 0 UI'; updateRecordType();
         $('record-dialog').close();
       });
     });
@@ -310,7 +310,7 @@
       try {
         const records = await transaction('readonly', store => store.getAll());
         download(JSON.stringify({ app: 'RubyKreon', version: 1, exportedAt: new Date().toISOString(), entries: records }), `RubyKreon-${localDateTime().slice(0, 10)}.json`, 'application/json');
-        status('Copia preparada. Conserva el archivo descargado.');
+        status('Copia preparada. Conserva el fitxer descarregat.');
       } catch (error) { status(error.message, true); }
     });
     $('import-diary').addEventListener('change', async e => {
@@ -318,15 +318,15 @@
       if (!file) return;
       e.target.disabled = true;
       try {
-        if (file.size > 200 * 1024 * 1024) throw new Error('La copia supera el límite de importación de 200 MB.');
+        if (file.size > 200 * 1024 * 1024) throw new Error('La còpia supera el límit de importació de 200 MB.');
         const backup = JSON.parse(await file.text());
-        if (backup.app !== 'RubyKreon' || backup.version !== 1 || !Array.isArray(backup.entries) || backup.entries.length > 10000) throw new Error('El archivo no es una copia compatible de RubyKreon.');
+        if (backup.app !== 'RubyKreon' || backup.version !== 1 || !Array.isArray(backup.entries) || backup.entries.length > 10000) throw new Error('El fitxer no és una còpia compatible de RubyKreon.');
         const records = backup.entries.map(normalizeEntry);
         const existing = new Set((await transaction('readonly', store => store.getAll())).map(record => record.id));
         const additions = records.filter(record => { if (existing.has(record.id)) return false; existing.add(record.id); return true; });
         await transaction('readwrite', store => { additions.forEach(record => store.add(record)); });
-        await refresh(); status(`✓ Importados ${additions.length} registros. Los existentes se han conservado.`);
-      } catch (error) { status(error instanceof SyntaxError ? 'La copia no contiene JSON válido.' : error.message, true); }
+        await refresh(); status(`✓ Importats ${additions.length} registres. Els registres existents s’han conservat.`);
+      } catch (error) { status(error instanceof SyntaxError ? 'La còpia no conté JSON vàlid.' : error.message, true); }
       finally { e.target.value = ''; e.target.disabled = false; }
     });
     $('timeline').addEventListener('click', async e => {
@@ -336,8 +336,8 @@
       if (!record) return;
       if (action.dataset.action === 'edit') openEditor(record);
       if (action.dataset.action === 'file') downloadFile((record.files || record.photos)[Number(action.dataset.index)]);
-      if (action.dataset.action === 'delete' && confirm('¿Borrar este registro y sus archivos?')) {
-        try { await transaction('readwrite', store => store.delete(record.id)); await refresh(); status('Registro eliminado.'); }
+      if (action.dataset.action === 'delete' && confirm('Esborrar aquest registre i les seves fitxers?')) {
+        try { await transaction('readwrite', store => store.delete(record.id)); await refresh(); status('Registre eliminat.'); }
         catch (error) { status(error.message, true); }
       }
     });
@@ -346,21 +346,21 @@
   function openNewRecord() {
     $('record-form').reset(); $('record-type').value = 'kreon';
     $('record-type').dispatchEvent(new Event('change'));
-    $('record-time').value = localDateTime(); $('record-caps-total').textContent = 'Total tomado: 0 UI';
+    $('record-time').value = localDateTime(); $('record-caps-total').textContent = 'Total pres: 0 UI';
     $('record-status').textContent = '';
     $('record-dialog').showModal(); $('record-type').focus();
   }
   function renderTimeline() {
     const rows = entries.map(record => {
       const date = new Date(record.timestamp);
-      const day = date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-      return `<tr data-record-id="${record.id}"><td>${escape(day)}</td><td>${escape(time)}</td><td>${escape(TYPES[record.type])}</td><td><button type="button" class="small-btn" data-action="edit" data-id="${record.id}" aria-label="Editar ${escape(TYPES[record.type])} ${day} ${time}">Editar</button></td><td><button type="button" class="small-btn danger" data-action="delete" data-id="${record.id}" aria-label="Borrar ${escape(TYPES[record.type])} ${day} ${time}">Borrar</button></td></tr>`;
+      const day = date.toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const time = date.toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' });
+      return `<tr data-record-id="${record.id}"><td>${escape(day)}</td><td>${escape(time)}</td><td>${escape(TYPES[record.type])}</td><td><button type="button" class="small-btn" data-action="edit" data-id="${record.id}" aria-label="Editar ${escape(TYPES[record.type])} ${day} ${time}">Editar</button></td><td><button type="button" class="small-btn danger" data-action="delete" data-id="${record.id}" aria-label="Esborrar ${escape(TYPES[record.type])} ${day} ${time}">Esborrar</button></td></tr>`;
     }).join('');
-    $('timeline').innerHTML = `<table class="diary-table records-table"><caption class="sr-only">Registros guardados</caption><thead><tr><th>Día</th><th>Hora</th><th>Tipo</th><th>Editar</th><th>Borrar</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Todavía no hay registros.</td></tr>'}</tbody></table>`;
+    $('timeline').innerHTML = `<table class="diary-table records-table"><caption class="sr-only">Registres desats</caption><thead><tr><th>Dia</th><th>Hora</th><th>Tipus</th><th>Editar</th><th>Esborrar</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Todavía No hi ha registres.</td></tr>'}</tbody></table>`;
   }
   function markersTable(markers) {
-    return `<div class="diary-table-wrap"><table class="diary-table"><thead><tr><th>Parámetro</th><th>Valor</th><th>Unidad</th><th>Referencia del informe</th></tr></thead><tbody>${markers.map(marker => `<tr><td>${escape(marker.name)}</td><td>${escape(marker.value)}</td><td>${escape(marker.unit)}</td><td>${escape(marker.reference)}</td></tr>`).join('')}</tbody></table></div>`;
+    return `<div class="diary-table-wrap"><table class="diary-table"><thead><tr><th>Paràmetre</th><th>Valor</th><th>Unitat</th><th>Referència dl’informe</th></tr></thead><tbody>${markers.map(marker => `<tr><td>${escape(marker.name)}</td><td>${escape(marker.value)}</td><td>${escape(marker.unit)}</td><td>${escape(marker.reference)}</td></tr>`).join('')}</tbody></table></div>`;
   }
   function renderTrends() {
     renderTrendTable();
@@ -371,13 +371,13 @@
       if (key === 'weight') return record.type === 'weight' ? [{ timestamp: record.timestamp, value: record.kg, unit: 'kg', reference: '' }] : [];
       return [];
     });
-    $('trend-table').innerHTML = rows.length ? `<table class="diary-table"><thead><tr><th>Fecha</th><th>Valor</th><th>Unidad</th><th>Referencia</th></tr></thead><tbody>${rows.map(row => `<tr><td>${escape(new Date(row.timestamp).toLocaleDateString('es-ES'))}</td><td>${escape(row.value)}</td><td>${escape(row.unit)}</td><td>${escape(row.reference)}</td></tr>`).join('')}</tbody></table>` : '<p class="help">Guarda registros para consultar su evolución.</p>';
+    $('trend-table').innerHTML = rows.length ? `<table class="diary-table"><thead><tr><th>Data</th><th>Valor</th><th>Unitat</th><th>Referència</th></tr></thead><tbody>${rows.map(row => `<tr><td>${escape(new Date(row.timestamp).toLocaleDateString('ca-ES'))}</td><td>${escape(row.value)}</td><td>${escape(row.unit)}</td><td>${escape(row.reference)}</td></tr>`).join('')}</tbody></table>` : '<p class="help">Desa registres per consultar la seva evolució.</p>';
   }
 
   function addMarker(container, marker = {}) {
-    if (container.children.length >= 200) throw new Error('Máximo 200 parámetros por informe.');
+    if (container.children.length >= 200) throw new Error('Màxim 200 paràmetres per informe.');
     const row = document.createElement('div'); row.className = 'lab-marker';
-    row.innerHTML = `<label>Parámetro<input data-marker="name" maxlength="200" required value="${escape(marker.name)}"></label><div class="diary-grid"><label>Valor<input data-marker="value" maxlength="200" required value="${escape(marker.value)}"></label><label>Unidad<input data-marker="unit" maxlength="100" value="${escape(marker.unit)}"></label></div><label>Rango de referencia del informe<input data-marker="reference" maxlength="300" value="${escape(marker.reference)}"></label><button type="button" class="small-btn danger">Quitar parámetro</button>`;
+    row.innerHTML = `<label>Paràmetre<input data-marker="name" maxlength="200" required value="${escape(marker.name)}"></label><div class="diary-grid"><label>Valor<input data-marker="value" maxlength="200" required value="${escape(marker.value)}"></label><label>Unitat<input data-marker="unit" maxlength="100" value="${escape(marker.unit)}"></label></div><label>Rango de referència dl’informe<input data-marker="reference" maxlength="300" value="${escape(marker.reference)}"></label><button type="button" class="small-btn danger">Treure paràmetre</button>`;
     row.querySelector('button').addEventListener('click', () => row.remove());
     container.append(row);
   }
@@ -387,15 +387,15 @@
   function openEditor(record) {
     const dialog = $('entry-editor');
     let specific = '';
-    if (record.type === 'meal') specific = `${field('Descripción', 'edit-title', 'text', 'required maxlength="5000"')}${field('Cantidad (g, opcional)', 'edit-grams', 'number', 'min="0.1" step="0.1"')}<label>Ingredientes<textarea id="edit-ingredients" maxlength="5000" rows="3"></textarea></label><p class="help">Cambiar la descripción, ingredientes o cantidad elimina la estimación anterior. Las fotos originales se conservan.</p>`;
-    if (record.type === 'kreon') specific = capsuleFields('edit-caps') + `<label>Comida asociada<select id="edit-meal"><option value="">Sin asociar</option>${entries.filter(item => item.type === 'meal').map(item => `<option value="${item.id}">${escape(new Date(item.timestamp).toLocaleString('es-ES'))} · ${escape(item.title)}</option>`).join('')}</select></label>`;
-    if (record.type === 'stool') specific = `<label>Bristol<select id="edit-bristol">${BRISTOL.map((label, i) => `<option value="${i + 1}">${label}</option>`).join('')}</select></label><label>Aspecto graso observado<select id="edit-greasy"><option value="unknown">No lo sé / no observado</option><option value="yes">Sí</option><option value="no">No</option></select></label>`;
-    if (record.type === 'weight') specific = field('Peso (kg)', 'edit-kg', 'number', 'required min="0.1" step="0.1"');
-    if (record.type === 'lab') specific = `${field('Nombre del informe', 'edit-title', 'text', 'required maxlength="200"')}<div id="edit-markers" class="lab-marker-list"></div><button id="edit-add-marker" class="small-btn" type="button">+ Añadir parámetro</button><label class="check-label"><input id="edit-reviewed" type="checkbox">He comprobado los valores y la fecha con el original.</label><p class="help">Los archivos originales se conservan. Puedes descargarlos desde la línea temporal.</p>`;
-    dialog.innerHTML = `<form id="edit-form" class="diary-form"><h2 id="editor-title">Editar ${TYPES[record.type]}</h2>${timeField('edit-time')}${specific}${notesField('edit-notes')}<button id="edit-save" class="btn-save" type="submit">Guardar cambios</button><button id="edit-cancel" class="small-btn" type="button">Cancelar</button></form>`;
+    if (record.type === 'meal') specific = `${field('Descripció', 'edit-title', 'text', 'required maxlength="5000"')}${field('Quantitat (g, opcional)', 'edit-grams', 'number', 'min="0.1" step="0.1"')}<label>Ingredients<textarea id="edit-ingredients" maxlength="5000" rows="3"></textarea></label><p class="help">Canviar la descripció, ingredients o quantitat elimina la estimació anterior. Les fotos originals es conserven.</p>`;
+    if (record.type === 'kreon') specific = capsuleFields('edit-caps') + `<label>Menjar associat<select id="edit-meal"><option value="">Sense associar</option>${entries.filter(item => item.type === 'meal').map(item => `<option value="${item.id}">${escape(new Date(item.timestamp).toLocaleString('ca-ES'))} · ${escape(item.title)}</option>`).join('')}</select></label>`;
+    if (record.type === 'stool') specific = `<label>Bristol<select id="edit-bristol">${BRISTOL.map((label, i) => `<option value="${i + 1}">${label}</option>`).join('')}</select></label><label>Aspecte gras observat<select id="edit-greasy"><option value="unknown">No ho sé / no observat</option><option value="yes">Sí</option><option value="no">no</option></select></label>`;
+    if (record.type === 'weight') specific = field('Pes (kg)', 'edit-kg', 'number', 'required min="0.1" step="0.1"');
+    if (record.type === 'lab') specific = `${field('Nom de l’informe', 'edit-title', 'text', 'required maxlength="200"')}<div id="edit-markers" class="lab-marker-list"></div><button id="edit-add-marker" class="small-btn" type="button">+ Afegir paràmetre</button><label class="check-label"><input id="edit-reviewed" type="checkbox">He comprovat els valors i la data amb el original.</label><p class="help">Els fitxers originals es conserven. Pots descarregar-los des de la llista de registres.</p>`;
+    dialog.innerHTML = `<form id="edit-form" class="diary-form"><h2 id="editor-title">Editar ${TYPES[record.type]}</h2>${timeField('edit-time')}${specific}${notesField('edit-notes')}<button id="edit-save" class="btn-save" type="submit">Desar canvis</button><button id="edit-cancel" class="small-btn" type="button">Cancel·lar</button></form>`;
     $('edit-time').value = localDateTime(new Date(record.timestamp)); $('edit-notes').value = record.notes;
     if (record.type === 'meal') { $('edit-title').value = record.title; $('edit-grams').value = record.grams ?? ''; $('edit-ingredients').value = record.ingredients; }
-    if (record.type === 'kreon') { for (const n of [10, 25, 35]) $(`edit-caps-${n}`).value = record.capsules[n]; wireCapsules('edit-caps'); $('edit-caps-total').textContent = `Total tomado: ${record.totalUI.toLocaleString('es-ES')} UI`; $('edit-meal').value = record.mealId || ''; }
+    if (record.type === 'kreon') { for (const n of [10, 25, 35]) $(`edit-caps-${n}`).value = record.capsules[n]; wireCapsules('edit-caps'); $('edit-caps-total').textContent = `Total pres: ${record.totalUI.toLocaleString('ca-ES')} UI`; $('edit-meal').value = record.mealId || ''; }
     if (record.type === 'stool') { $('edit-bristol').value = record.bristol; $('edit-greasy').value = record.greasy || 'unknown'; }
     if (record.type === 'weight') $('edit-kg').value = record.kg;
     if (record.type === 'lab') {
@@ -408,7 +408,7 @@
     const originals = record.files || record.photos || [];
     if (originals.length) {
       const attachments = document.createElement('details');
-      attachments.innerHTML = `<summary>Archivos originales (${originals.length})</summary>${originals.map((file, index) => `<button type="button" class="small-btn" data-download-index="${index}">${escape(file.name)}</button>`).join('')}`;
+      attachments.innerHTML = `<summary>Fitxers originals (${originals.length})</summary>${originals.map((file, index) => `<button type="button" class="small-btn" data-download-index="${index}">${escape(file.name)}</button>`).join('')}`;
       attachments.addEventListener('click', event => { const button = event.target.closest('[data-download-index]'); if (button) downloadFile(originals[Number(button.dataset.downloadIndex)]); });
       $('edit-form').append(attachments);
     }
@@ -434,7 +434,7 @@
   function refreshMealChoices() {
     if (!$('record-meal')) return;
     const previous = $('record-meal').value;
-    $('record-meal').innerHTML = '<option value="">Sin asociar</option>' + entries.filter(record => record.type === 'meal').map(record => `<option value="${record.id}">${escape(new Date(record.timestamp).toLocaleString('es-ES'))} · ${escape(record.title)}</option>`).join('');
+    $('record-meal').innerHTML = '<option value="">Sense associar</option>' + entries.filter(record => record.type === 'meal').map(record => `<option value="${record.id}">${escape(new Date(record.timestamp).toLocaleString('ca-ES'))} · ${escape(record.title)}</option>`).join('');
     if (entries.some(record => record.id === previous)) $('record-meal').value = previous;
   }
   function clearMealAnalysis() { mealAnalysis = null; window.RubyAnalytics?.renderSimulation(); ++revision; window.RubyRegression?.renderPrediction(); }
@@ -444,23 +444,23 @@
     ++mealFilesVersion; mealFilesReading = false; extraPhotos = []; renderMealPhotos(); clearMealAnalysis();
   }
   async function addMealPhotos(list) {
-    if (mealFilesReading) { status('Espera a que se carguen las fotos.', true); return; }
+    if (mealFilesReading) { status('Espera que es carreguin les fotos.', true); return; }
     const version = ++mealFilesVersion;
     mealFilesReading = true; clearMealAnalysis(); $('results').style.display = 'none';
     try {
       const files = await readFiles(list, 4 - extraPhotos.length);
       if (version !== mealFilesVersion) return;
-      if ([...extraPhotos, ...files].reduce((sum, file) => sum + file.size, 0) > MAX_FILES_BYTES) throw new Error('Las fotos no pueden superar 20 MB en total.');
+      if ([...extraPhotos, ...files].reduce((sum, file) => sum + file.size, 0) > MAX_FILES_BYTES) throw new Error('Les fotos no poden superar 20 MB en total.');
       extraPhotos.push(...files); renderMealPhotos(); status('');
     } catch (error) { if (version === mealFilesVersion) status(error.message, true); }
     finally { if (version === mealFilesVersion) { mealFilesReading = false; ++revision; checkReady(); } }
   }
   function addMealPhotoData(photo) {
     try {
-      if (mealFilesReading) throw new Error('Espera a que se carguen las fotos.');
+      if (mealFilesReading) throw new Error('Espera que es carreguin les fotos.');
       const file = normalizeFile(photo);
-      if (extraPhotos.length >= 4) throw new Error('Una comida admite hasta 4 fotos.');
-      if (extraPhotos.reduce((sum, photo) => sum + photo.size, file.size) > MAX_FILES_BYTES) throw new Error('Las fotos no pueden superar 20 MB en total.');
+      if (extraPhotos.length >= 4) throw new Error('Un àpat admet fins a 4 fotos.');
+      if (extraPhotos.reduce((sum, photo) => sum + photo.size, file.size) > MAX_FILES_BYTES) throw new Error('Les fotos no poden superar 20 MB en total.');
       extraPhotos.push(file); ++mealFilesVersion; clearMealAnalysis(); $('results').style.display = 'none'; renderMealPhotos(); status('');
     } catch (error) { status(error.message, true); }
   }
@@ -478,10 +478,10 @@
     $('meal-form').addEventListener('submit', e => {
       e.preventDefault();
       submit(e.target, $('save-meal'), async () => {
-        if (mealFilesReading) throw new Error('Espera a que se carguen las fotos.');
+        if (mealFilesReading) throw new Error('Espera que es carreguin les fotos.');
         const photos = [...extraPhotos];
-        if (imageBase64) photos.unshift({ name: 'plato.' + (imageMime.split('/')[1] || 'jpg'), mime: imageMime, dataUrl: `data:${imageMime};base64,${imageBase64}` });
-        await save({ ...newRecord('meal', localDateTime(), ''), title: $('meal-title').value.trim() || mealAnalysis?.dish || 'Comida', grams: null, ingredients: '', kind: $('meal-kind').value, suggestion: window.RubyAnalytics.suggestForMeal($('meal-kind').value), photos, analysis: mealAnalysis });
+        if (imageBase64) photos.unshift({ name: 'plat.' + (imageMime.split('/')[1] || 'jpg'), mime: imageMime, dataUrl: `data:${imageMime};base64,${imageBase64}` });
+        await save({ ...newRecord('meal', localDateTime(), ''), title: $('meal-title').value.trim() || mealAnalysis?.dish || 'Menjar', grams: null, ingredients: '', kind: $('meal-kind').value, suggestion: window.RubyAnalytics.suggestForMeal($('meal-kind').value), photos, analysis: mealAnalysis });
         $('meal-form').reset(); $('meal-time').value = localDateTime();
         ++mealFilesVersion; extraPhotos = []; mealFilesReading = false;
         $('meal-extra-list').replaceChildren(); resetImage(); window.RubyAnalytics.renderCapsules(); screen('diary');
@@ -500,13 +500,13 @@
       for (const n of [10, 25, 35]) $(`record-caps-${n}`).value = capsules[n] || 0;
       $('record-caps-10').dispatchEvent(new Event('input'));
       $('record-time').value = localDateTime(); screen('diary');
-      status('Revisa la combinación y guarda el registro cuando hayas tomado las cápsulas.');
+      status('Revisa la combinació i desa el registre quan hagis pres les càpsules.');
     },
     clearMealAnalysis, mealRevision: () => revision, mealContext,
     mealImages: () => {
-      if (mealFilesReading) throw new Error('Espera a que se carguen las fotos adicionales.');
+      if (mealFilesReading) throw new Error('Espera que es carreguin les fotos addicionals.');
       const size = (imageBase64?.length || 0) * .75 + extraPhotos.reduce((sum, file) => sum + file.size, 0);
-      if (size > MAX_FILES_BYTES) throw new Error('Las fotos de la comida superan los 20 MB en total. Quita alguna foto o elige imágenes más pequeñas.');
+      if (size > MAX_FILES_BYTES) throw new Error('Les fotos de l’àpat superen els 20 MB en total. Treu alguna foto o tria imatges més petites.');
       return extraPhotos;
     },
     setMealAnalysis(fat) {
@@ -530,6 +530,6 @@
           if (e.target.closest('#save-meal, #save-record, #save-review')) navigator.storage.persist?.().catch(() => {});
         });
       }
-    } catch (error) { status(error.message || 'No se pudo abrir el diario en este navegador.', true); }
+    } catch (error) { status(error.message || 'No s’ha pogut obrir el diari en aquest navegador.', true); }
   });
 })();
