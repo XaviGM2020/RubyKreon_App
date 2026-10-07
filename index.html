@@ -519,7 +519,7 @@
       <button class="change-btn" onclick="resetImage()">Cambiar</button>
     </div>
     <div class="photo-actions">
-      <button type="button" class="photo-btn" id="camera-btn" onclick="openCamera()">📷 Tomar foto</button>
+      <button type="button" class="photo-btn" id="camera-btn" onclick="takePhoto()">📷 Tomar foto</button>
     </div>
     <input type="file" id="camera-input" accept="image/*" capture="environment" hidden onchange="handleFile(this.files[0]); this.value = ''"/>
   </div>
@@ -702,6 +702,20 @@
   }
 
   // ── Image handling ─────────────────────────────────────────────────
+  function takePhoto() {
+    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') ||
+      (/Macintosh/i.test(navigator.userAgent || '') && navigator.maxTouchPoints > 1);
+    if (mobile) {
+      // Use the phone's photo capture UI instead of a browser video stream.
+      // Keep this synchronous so the file picker retains the user's activation.
+      const input = document.getElementById('camera-input');
+      input.value = '';
+      input.click();
+      return;
+    }
+    return openCamera();
+  }
+
   async function openCamera() {
     if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
       document.getElementById('camera-input').click();
