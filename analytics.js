@@ -78,6 +78,42 @@
     const capsules = capsuleCombination(targetUI, prescription.available);
     return capsules ? normalizeSuggestion({ targetUI, capsules, regimenUpdatedAt: prescription.updatedAt }) : null;
   }
+  const SIMULATION_KEY = 'rubykreon-demo-ui-per-gram';
+  function simulationFactor() {
+    const input = $('simulation-ui-per-gram');
+    const factor = Number(input.value);
+    if (!input.checkValidity() || !Number.isSafeInteger(factor) || factor <= 0) return null;
+    return factor;
+  }
+  function renderSimulation() {
+    const analysis = window.RubyDiary?.getMealAnalysis(), factor = simulationFactor();
+    $('simulation-capsules').replaceChildren();
+    if (!analysis) { $('simulation-result').textContent = 'Analiza una comida para ver la simulación.'; return; }
+    if (factor == null) { $('simulation-result').textContent = 'Introduce un parámetro entero entre 1 y 100.000 UI/g para la demostración.'; return; }
+    const total = analysis.totalFat * factor;
+    if (!Number.isFinite(total)) { $('simulation-result').textContent = 'El resultado no se puede representar.'; return; }
+    const format = value => value.toLocaleString('es-ES', { maximumFractionDigits: 6 });
+    $('simulation-result').textContent = `Total simulado: ${format(analysis.totalFat)} g × ${format(factor)} UI/g = ${format(total)} UI de lipasa.`;
+    const capsules = capsuleCombination(total);
+    if (total === 0) { $('simulation-capsules').textContent = 'Resultado matemático cero; no determina si necesitas medicación.'; return; }
+    if (!capsules) { $('simulation-capsules').textContent = 'Este total no tiene una combinación exacta con cápsulas enteras de 10.000, 25.000 y 35.000 UI dentro del intervalo de cálculo de la demostración (hasta 1.000.000 UI). No se redondea ni se propone una cantidad para tomar.'; return; }
+    $('simulation-capsules').innerHTML = `<table><caption>Reparto matemático exacto con el menor número de cápsulas</caption><thead><tr><th>UI por cápsula</th><th>Número</th><th>Subtotal UI</th></tr></thead><tbody>${STRENGTHS.filter(n => capsules[n]).map(n => `<tr><td>${format(n * 1000)}</td><td>${capsules[n]}</td><td>${format(n * 1000 * capsules[n])}</td></tr>`).join('')}</tbody><tfoot><tr><th>Total simulado</th><td>${Object.values(capsules).reduce((sum, count) => sum + count, 0)}</td><td>${format(total)}</td></tr></tfoot></table>`;
+  }
+  function initSimulation() {
+    try {
+      const stored = Number(localStorage.getItem(SIMULATION_KEY));
+      if (Number.isSafeInteger(stored) && stored >= 1 && stored <= 100000) $('simulation-ui-per-gram').value = stored;
+    } catch { /* A demo remains available without storage. */ }
+    $('simulation-ui-per-gram').addEventListener('input', () => { $('simulation-factor-status').textContent = 'Cambio aplicado a la simulación; pulsa Guardar para conservarlo.'; renderSimulation(); });
+    $('save-simulation-factor').addEventListener('click', () => {
+      const factor = simulationFactor();
+      if (factor == null) { $('simulation-factor-status').textContent = 'Introduce un parámetro válido antes de guardar.'; return; }
+      try { localStorage.setItem(SIMULATION_KEY, String(factor)); $('simulation-factor-status').textContent = 'Parámetro de demostración guardado en este navegador.'; }
+      catch { $('simulation-factor-status').textContent = 'No se pudo guardar el parámetro en este navegador.'; }
+      renderSimulation();
+    });
+    renderSimulation();
+  }
   function renderAempsReference() {
     const rows = [];
     for (let total = 25000; total <= 80000; total += 5000) {
@@ -337,7 +373,7 @@
       details.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('regimen-meal').focus();
     });
     $('use-capsules').addEventListener('click', () => { const suggestion = suggestForMeal($('meal-kind').value); if (suggestion) window.RubyDiary.prepareTakenDose(suggestion.capsules); });
-    renderAempsReference(); renderCapsules(); renderSummary(); renderArchive();
+    initSimulation(); renderAempsReference(); renderCapsules(); renderSummary(); renderArchive();
   }
-  window.RubyAnalytics = { init, dataChanged, renderCapsules, suggestForMeal, capsuleCombination, combinationText, normalizeProfile, normalizeSuggestion, normalizeNarrative, normalizeReport, selectEntries, summarize, analysisRequest };
+  window.RubyAnalytics = { init, renderSimulation, dataChanged, renderCapsules, suggestForMeal, capsuleCombination, combinationText, normalizeProfile, normalizeSuggestion, normalizeNarrative, normalizeReport, selectEntries, summarize, analysisRequest };
 })();

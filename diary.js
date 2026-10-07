@@ -428,7 +428,7 @@
     $('record-meal').innerHTML = '<option value="">Sin asociar</option>' + entries.filter(record => record.type === 'meal').map(record => `<option value="${record.id}">${escape(new Date(record.timestamp).toLocaleString('es-ES'))} · ${escape(record.title)}</option>`).join('');
     if (entries.some(record => record.id === previous)) $('record-meal').value = previous;
   }
-  function clearMealAnalysis() { mealAnalysis = null; ++revision; window.RubyRegression?.renderPrediction(); }
+  function clearMealAnalysis() { mealAnalysis = null; window.RubyAnalytics?.renderSimulation(); ++revision; window.RubyRegression?.renderPrediction(); }
   function mealContext() { return { description: $('meal-title').value, portionGrams: $('meal-grams').value, ingredients: $('meal-ingredients').value, kind: $('meal-kind').value }; }
   function buildMeals() {
     $('meal-time').value = localDateTime();
@@ -486,6 +486,7 @@
     },
     setMealAnalysis(fat) {
       mealAnalysis = { ...fat, dose: null };
+      window.RubyAnalytics.renderSimulation();
       window.RubyRegression.renderPrediction();
       if (!$('meal-title').value.trim() && typeof fat.dish === 'string') $('meal-title').value = fat.dish.slice(0, 200);
     },

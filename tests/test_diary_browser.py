@@ -97,6 +97,18 @@ def run():
         assert any('25.0001 cápsula de 25.000 UI1' in row for row in reference)
         assert any('80.000' in row and '3' in row for row in reference)
         assert page.evaluate('RubyAnalytics.suggestForMeal()') is None
+        expect(page.locator('#simulation-result')).to_contain_text('12.500 UI')
+        expect(page.locator('#simulation-capsules')).to_contain_text('no tiene una combinación exacta')
+        page.locator('#simulation-ui-per-gram').fill('2000')
+        expect(page.locator('#simulation-result')).to_contain_text('25.000 UI')
+        expect(page.locator('#simulation-capsules tbody tr')).to_have_count(1)
+        expect(page.locator('#simulation-capsules tbody')).to_contain_text('25.000')
+        page.locator('#save-simulation-factor').click()
+        assert page.evaluate("localStorage.getItem('rubykreon-demo-ui-per-gram')")=='2000'
+        assert page.evaluate('RubyAnalytics.suggestForMeal()') is None
+        page.locator('#simulation-ui-per-gram').fill('0')
+        expect(page.locator('#simulation-capsules tbody tr')).to_have_count(0)
+        page.locator('#simulation-ui-per-gram').fill('2000')
         assert '150 g de arroz cocido' in content[0]['text']
         page.locator('#meal-title').fill(' ')
         expect(page.locator('#analyze-btn')).to_be_disabled()
@@ -219,7 +231,7 @@ def run():
         second.locator('#import-diary').set_input_files({'name':'invalid.json','mimeType':'application/json','buffer':json.dumps(invalid).encode()})
         expect(second.locator('#diary-status')).to_have_class('error'); assert len(stored(second))==167
         second.evaluate('() => navigator.serviceWorker.ready'); second.reload(); second.wait_for_function('Boolean(navigator.serviceWorker.controller)')
-        assert second.evaluate("() => caches.open('rubykreon-v10').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
+        assert second.evaluate("() => caches.open('rubykreon-v11').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
         fresh.set_offline(True); second.reload(); second.locator('[data-screen="diary"]').click(); count(second,167); fresh.set_offline(False)
         assert second.evaluate('document.documentElement.scrollWidth <= innerWidth')
         assert not errors,errors
