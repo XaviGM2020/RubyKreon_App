@@ -76,7 +76,11 @@ def run():
         assert page.locator('#med-type').count()==0 and page.locator('#dose-per-gram').count()==0
         assert page.locator('#lab-files').count()==0
         expect(page.locator('#capsule-details')).to_contain_text('pauta prescrita')
+        expect(page.locator('#api-key-input')).not_to_be_visible()
+        assert page.locator('#install-card, #install-banner').count()==0
+        page.get_by_role('button',name='Ajustes',exact=True).click()
         page.locator('#api-key-input').fill('sk-or-test-only'); page.get_by_role('button',name='Guardar',exact=True).click()
+        page.get_by_role('button',name='Cerrar ajustes').click()
         page.locator('#file-input').set_input_files({'name':'plato.png','mimeType':'image/png','buffer':PNG})
         page.locator('#meal-title').fill('Arroz con pollo'); page.locator('#meal-grams').fill('250')
         page.locator('#meal-ingredients').fill('150 g de arroz, 100 g de pollo')
@@ -194,7 +198,7 @@ def run():
         second.locator('#import-diary').set_input_files({'name':'invalid.json','mimeType':'application/json','buffer':json.dumps(invalid).encode()})
         expect(second.locator('#diary-status')).to_have_class('error'); assert len(stored(second))==167
         second.evaluate('() => navigator.serviceWorker.ready'); second.reload(); second.wait_for_function('Boolean(navigator.serviceWorker.controller)')
-        assert second.evaluate("() => caches.open('rubykreon-v5').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
+        assert second.evaluate("() => caches.open('rubykreon-v6').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
         fresh.set_offline(True); second.reload(); second.locator('[data-screen="diary"]').click(); count(second,167); fresh.set_offline(False)
         assert second.evaluate('document.documentElement.scrollWidth <= innerWidth')
         assert not errors,errors

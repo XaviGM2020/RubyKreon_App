@@ -60,7 +60,7 @@ Una predicción fuera del rango de entrenamiento se señala como extrapolación.
 
 ## IA y almacenamiento
 
-Obtén una clave en [OpenRouter](https://openrouter.ai/settings/keys) y guárdala en la app. Se conserva en `localStorage` (nombre `gai_key` por compatibilidad) y se envía a OpenRouter para autenticar las peticiones. Se usa `meta-llama/llama-4-maverick` para fotos y analíticas del diario. La regresión no necesita clave ni conexión.
+Obtén una clave en [OpenRouter](https://openrouter.ai/settings/keys) y guárdala desde ⚙️ Ajustes en la app. Se conserva en `localStorage` (nombre `gai_key` por compatibilidad) y se envía a OpenRouter para autenticar las peticiones. Se usa `meta-llama/llama-4-maverick` para fotos y analíticas del diario. La regresión no necesita clave ni conexión.
 
 El historial se guarda en IndexedDB (`rubykreon-diary`) dentro de ese navegador y móvil, sin cuentas ni sincronización. El service worker permite abrir y usar el diario sin conexión después de la primera carga. La IA requiere conexión y puede consumir saldo.
 
