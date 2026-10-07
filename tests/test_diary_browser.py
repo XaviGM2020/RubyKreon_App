@@ -22,7 +22,12 @@ def stored(page):
 
 
 def count(page, n):
-    expect(page.locator('#timeline article')).to_have_count(n)
+    expect(page.locator('#timeline tr[data-record-id]')).to_have_count(n)
+
+
+def open_backup(page):
+    if not page.locator('#settings-dialog').is_visible(): page.get_by_role('button',name='Ajustes',exact=True).click()
+    if not page.locator('#backup-settings').evaluate('(el) => el.open'): page.locator('#backup-settings > summary').click()
 
 
 def synthetic_history():
@@ -154,9 +159,22 @@ def run():
         page.locator('#record-meal').select_option(meal['id'])
         page.locator('#save-record').click(); count(page,2)
         assert next(r for r in stored(page) if r['type']=='kreon')['mealId']==meal['id']
+        page.locator('#new-record').click()
         page.locator('#record-type').select_option('stool'); page.locator('#record-bristol').select_option('7'); page.locator('#record-greasy').select_option('yes')
         page.locator('#save-record').click(); count(page,3)
+        page.locator('#new-record').click()
         page.locator('#record-type').select_option('weight'); page.locator('#record-kg').fill('65.2'); page.locator('#save-record').click(); count(page,4)
+        weight_id=next(r['id'] for r in stored(page) if r['type']=='weight')
+        page.locator(f'[data-action="edit"][data-id="{weight_id}"]').click()
+        page.locator('#edit-kg').fill('65.3'); page.locator('#edit-save').click()
+        expect(page.locator('#entry-editor')).not_to_be_visible()
+        assert next(r['kg'] for r in stored(page) if r['id']==weight_id)==65.3
+        page.locator('#new-record').click(); page.locator('#record-type').select_option('weight')
+        page.locator('#record-kg').fill('70'); page.locator('#save-record').click(); count(page,5)
+        extra_id=next(r['id'] for r in stored(page) if r['type']=='weight' and r['kg']==70)
+        page.once('dialog',lambda dialog:dialog.accept())
+        page.locator(f'[data-action="delete"][data-id="{extra_id}"]').click(); count(page,4)
+        assert not any(r['id']==extra_id for r in stored(page))
         page.reload(); page.locator('[data-screen="diary"]').click(); count(page,4)
         print('PASS: exact prescribed capsule combinations, snack selection, explicit taking and meal association, persistence')
 
@@ -186,17 +204,23 @@ def run():
         page.locator('[data-screen="diary"]').click(); count(page,5)
         legacy={'id':'legacy-pdf','type':'lab','timestamp':'2026-06-01T12:00:00Z','title':'Documento anterior','markers':[],
                 'files':[{'name':'original.pdf','mime':'application/pdf','dataUrl':'data:application/pdf;base64,'+base64.b64encode(PDF).decode()}]}
+        open_backup(page)
         page.locator('#import-diary').set_input_files({'name':'old.json','mimeType':'application/json','buffer':json.dumps({'app':'RubyKreon','version':1,'entries':[legacy]}).encode()})
         count(page,6)
-        page.locator('article:has([data-id="legacy-pdf"]) summary').click()
-        with page.expect_download() as info: page.locator('[data-action="file"][data-id="legacy-pdf"]').click()
+        page.get_by_role('button',name='Cerrar ajustes').click()
+        page.locator('[data-action="edit"][data-id="legacy-pdf"]').click()
+        page.locator('#edit-form details summary').click()
+        with page.expect_download() as info: page.locator('#edit-form [data-download-index="0"]').click()
         assert Path(info.value.path()).read_bytes()==PDF
+        page.locator('#edit-cancel').click()
+        open_backup(page)
         with page.expect_download() as info: page.locator('#export-diary').click()
         backup_path=Path(tmp)/'backup.json'; info.value.save_as(backup_path)
         backup=json.loads(backup_path.read_text()); assert len(backup['entries'])==6 and 'sk-or-test-only' not in backup_path.read_text()
         fresh=browser.new_context(viewport={'width':390,'height':844},timezone_id='Europe/Madrid')
         second=fresh.new_page(); second.on('pageerror',lambda e:errors.append(str(e)))
         second.goto(URL); second.wait_for_selector('#record-form',state='attached'); second.locator('[data-screen="diary"]').click()
+        open_backup(second)
         second.locator('#import-diary').set_input_files(str(backup_path)); count(second,6)
         second.locator('#import-diary').set_input_files(str(backup_path)); expect(second.locator('#diary-status')).to_contain_text('Importados 0')
         assert second.evaluate("localStorage.getItem('rubykreon-prescribed-regimen')")==None
@@ -205,6 +229,7 @@ def run():
         history=synthetic_history()
         second.locator('#import-diary').set_input_files({'name':'synthetic.json','mimeType':'application/json','buffer':json.dumps({'app':'RubyKreon','version':1,'entries':history}).encode()})
         count(second,167)
+        second.get_by_role('button',name='Cerrar ajustes').click()
         second.locator('[data-screen="lab"]').click()
         second.locator('#train-regression').click(); expect(second.locator('#regression-status')).to_contain_text('Modelo entrenado')
         expect(second.locator('#regression-result')).to_contain_text('32 comidas de entrenamiento')
@@ -241,17 +266,19 @@ def run():
         print('PASS: linear fit against known synthetic relationship, chronological validation, future-data exclusion, collinearity handling, prediction separated from prescribing')
 
         second.locator('[data-screen="diary"]').click()
-        second.locator('#timeline-type').select_option('stool'); expect(second.locator('#timeline article')).to_have_count(41)
-        second.locator('#clear-filters').click(); count(second,167)
+        count(second,167)
+        assert second.locator('#diary-screen button:not([data-action])').count()==1
+        expect(second.locator('#timeline th')).to_have_text(['Día','Hora','Tipo','Editar','Borrar'])
+        open_backup(second)
         invalid={'app':'RubyKreon','version':1,'entries':[{'id':'bad','type':'stool','timestamp':'2026-10-07','bristol':0}]}
         second.locator('#import-diary').set_input_files({'name':'invalid.json','mimeType':'application/json','buffer':json.dumps(invalid).encode()})
         expect(second.locator('#diary-status')).to_have_class('error'); assert len(stored(second))==167
         second.evaluate('() => navigator.serviceWorker.ready'); second.reload(); second.wait_for_function('Boolean(navigator.serviceWorker.controller)')
-        assert second.evaluate("() => caches.open('rubykreon-v13').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
+        assert second.evaluate("() => caches.open('rubykreon-v14').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
         fresh.set_offline(True); second.reload(); second.locator('[data-screen="diary"]').click(); count(second,167); fresh.set_offline(False)
         assert second.evaluate('document.documentElement.scrollWidth <= innerWidth')
         assert not errors,errors
-        print('PASS: filtering, invalid-import preservation, offline diary and model assets, mobile layout, no browser errors')
+        print('PASS: minimal records table, invalid-import preservation, offline diary and model assets, mobile layout, no browser errors')
         fresh.close(); context.close(); browser.close()
 
 

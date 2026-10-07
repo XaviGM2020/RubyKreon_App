@@ -41,8 +41,8 @@
 .small-btn { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--surface); color: var(--text); cursor: pointer; font: inherit; font-size: .8rem; }
 .small-btn.danger { color: #fb923c; }
 button:disabled { opacity: .5; cursor: not-allowed; }
-#entry-editor, #settings-dialog { margin: auto; width: min(94vw, 640px); max-height: 90vh; overflow-y: auto; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
-#entry-editor::backdrop, #settings-dialog::backdrop { background: #000b; }
+#entry-editor, #settings-dialog, #record-dialog { margin: auto; width: min(94vw, 640px); max-height: 90vh; overflow-y: auto; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
+#entry-editor::backdrop, #settings-dialog::backdrop, #record-dialog::backdrop { background: #000b; }
 .analytics-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .analytics-metrics > div { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
 .analytics-metrics span, .analytics-metrics small { display: block; color: #a1a8b6; font-size: .75rem; }
@@ -73,3 +73,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 #simulation-result { font-weight: 700; font-size: 1.05rem; }
 
 @media (max-width: 480px) { header span { display: none; } header h1 { margin-right: auto; } }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.records-table { width: 100%; font-size: .8rem; }
+.records-table th, .records-table td { padding: 9px 4px; }
+.records-table .small-btn { padding: 7px 6px; font-size: .75rem; }
+#record-dialog .card { border: 0; padding: 0; }

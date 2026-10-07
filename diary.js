@@ -15,6 +15,7 @@
   function status(message, error = false) {
     $('diary-status').textContent = message;
     $('diary-status').classList.toggle('error', error);
+    if ($('record-status')) { $('record-status').textContent = message; $('record-status').classList.toggle('error', error); }
   }
   function localDateTime(date = new Date()) {
     const shifted = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -228,7 +229,7 @@
     $('diary-screen').innerHTML = `
       <div class="card diary-form">
         <h2>Añadir un registro</h2>
-        <label>Tipo<select id="record-type"><option value="kreon">Kreon tomado</option><option value="stool">Deposición · Bristol</option><option value="weight">Peso</option></select></label>
+        <label>Tipo<select id="record-type"><option value="kreon">Kreon tomado</option><option value="meal">Comida</option><option value="stool">Deposición · Bristol</option><option value="weight">Peso</option></select></label>
         <form id="record-form" class="diary-form">
           ${timeField('record-time')}
           <div id="record-kreon">${capsuleFields('record-caps')}</div>
@@ -262,8 +263,23 @@
         <label>Importar copia (.json)<input id="import-diary" type="file" accept="application/json,.json"></label>
         <p class="help">La importación añade los registros nuevos y omite los que ya existen.</p>
       </div>`;
+    const screenCards = Array.from($('diary-screen').children);
+    const createDialog = $('record-dialog');
+    createDialog.append(screenCards[0]);
+    screenCards[0].querySelector('h2').id = 'record-dialog-title';
+    const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'small-btn'; cancel.textContent = 'Cancelar';
+    cancel.addEventListener('click', () => createDialog.close()); $('record-form').append(cancel);
+    const dialogStatus = document.createElement('p'); dialogStatus.id = 'record-status'; dialogStatus.setAttribute('role', 'status'); $('record-form').append(dialogStatus);
+    for (const [index, title] of [[2, 'Evolución del peso'], [3, 'Copia de seguridad']]) {
+      const details = document.createElement('details'); details.className = 'card'; if (index === 3) details.id = 'backup-settings';
+      const summary = document.createElement('summary'); summary.textContent = title;
+      details.append(summary, screenCards[index]); $('settings-dialog').append(details);
+    }
+    $('diary-screen').innerHTML = '<div id="timeline" class="diary-table-wrap"></div><button id="new-record" type="button" class="btn-save">Nuevo registro</button>';
+    $('new-record').addEventListener('click', openNewRecord);
     $('record-time').value = localDateTime();
     const updateRecordType = () => {
+      if ($('record-type').value === 'meal') { $('record-dialog').close(); screen('meal'); $('meal-title').focus(); return; }
       for (const type of ['kreon', 'stool', 'weight']) $(`record-${type}`).hidden = $('record-type').value !== type;
       $('record-kg').required = $('record-type').value === 'weight';
       $('record-kg').disabled = $('record-type').value !== 'weight';
@@ -285,11 +301,10 @@
         if (type === 'weight') record.kg = number($('record-kg').value, 'peso', .1);
         await save(record);
         $('record-form').reset(); $('record-time').value = localDateTime();
-        $('record-caps-total').textContent = 'Total tomado: 0 UI';
+        $('record-caps-total').textContent = 'Total tomado: 0 UI'; updateRecordType();
+        $('record-dialog').close();
       });
     });
-    for (const id of ['timeline-date', 'timeline-type']) $(id).addEventListener('change', renderTimeline);
-    $('clear-filters').addEventListener('click', () => { $('timeline-date').value = ''; $('timeline-type').value = ''; renderTimeline(); });
     $('trend-select').addEventListener('change', renderTrendTable);
     $('export-diary').addEventListener('click', async () => {
       try {
@@ -321,41 +336,28 @@
       if (!record) return;
       if (action.dataset.action === 'edit') openEditor(record);
       if (action.dataset.action === 'file') downloadFile((record.files || record.photos)[Number(action.dataset.index)]);
-      if (action.dataset.action === 'delete' && confirm('¿Eliminar este registro y sus archivos del diario?')) {
+      if (action.dataset.action === 'delete' && confirm('¿Borrar este registro y sus archivos?')) {
         try { await transaction('readwrite', store => store.delete(record.id)); await refresh(); status('Registro eliminado.'); }
         catch (error) { status(error.message, true); }
       }
     });
   }
 
+  function openNewRecord() {
+    $('record-form').reset(); $('record-type').value = 'kreon';
+    $('record-type').dispatchEvent(new Event('change'));
+    $('record-time').value = localDateTime(); $('record-caps-total').textContent = 'Total tomado: 0 UI';
+    $('record-status').textContent = '';
+    $('record-dialog').showModal(); $('record-type').focus();
+  }
   function renderTimeline() {
-    const date = $('timeline-date').value, type = $('timeline-type').value;
-    const records = entries.filter(record => (!type || record.type === type) && (!date || localDateTime(new Date(record.timestamp)).slice(0, 10) === date));
-    $('timeline').innerHTML = records.length ? records.map(record => {
-      let title = TYPES[record.type], content = '';
-      if (record.type === 'meal') {
-        title = record.title;
-        content = `<p>${record.kind === 'snack' ? 'Tentempié' : 'Comida principal'}${record.grams ? ` · ${record.grams} g de plato` : ''}</p><p>${escape(record.ingredients)}</p>`;
-        if (record.analysis) content += `<p>Estimación IA: ${record.analysis.totalFat} g de grasa · ${record.analysis.calories} kcal</p><p>${escape(record.analysis.description)}</p>`;
-        if (record.analysis?.dose) content += `<p class="help">Estimación anterior: ${record.analysis.dose.rounded.toLocaleString('es-ES')} ${escape(record.analysis.dose.unit)}. No corresponde a una pauta registrada ni a una toma.</p>`;
-        if (record.suggestion) content += `<p>Combinación según la pauta guardada: ${escape(window.RubyAnalytics.combinationText(record.suggestion.capsules))} · ${record.suggestion.totalUI.toLocaleString('es-ES')} UI. No registrada como tomada.</p>`;
-      }
-      if (record.type === 'kreon') content = `<p>${[10, 25, 35].filter(n => record.capsules[n]).map(n => `${record.capsules[n]} × ${n}.000 UI`).join(' + ')}\nTotal tomado: ${record.totalUI.toLocaleString('es-ES')} UI</p>`;
-      if (record.type === 'stool') content = `<p>Bristol: tipo ${record.bristol} de 7\nAspecto graso observado: ${record.greasy === 'yes' ? 'sí' : record.greasy === 'no' ? 'no' : 'sin información'}</p>`;
-      if (record.type === 'weight') content = `<p>${record.kg.toLocaleString('es-ES')} kg</p>`;
-      if (record.type === 'lab') {
-        title = record.title;
-        content = record.markers.length ? markersTable(record.markers) : '<p>Informe archivado sin valores extraídos.</p>';
-        content += `<p class="help">${record.reviewed ? 'Valores revisados por el usuario.' : 'Pendiente de extracción o revisión.'}</p>`;
-      }
-      if (record.type === 'review') {
-        title = `Análisis: ${record.report.from} — ${record.report.to}`;
-        content = `<p>${escape(record.report.summary)}</p>${record.report.observations.map(item => `<p>• ${escape(item)}</p>`).join('')}<p class="help">${record.report.entryCount} registros incluidos. Este análisis no modifica la pauta.</p>`;
-      }
-      const files = record.files || record.photos || [];
-      const attachments = files.length ? `<details><summary>Archivos originales (${files.length})</summary>${files.map((file, index) => `${file.mime.startsWith('image/') ? `<img class="entry-photo" loading="lazy" src="${escape(file.dataUrl)}" alt="${escape(file.name)}">` : ''}<p><button class="small-btn" type="button" data-action="file" data-id="${record.id}" data-index="${index}">Descargar ${escape(file.name)}</button></p>`).join('')}</details>` : '';
-      return `<article><time datetime="${record.timestamp}">${escape(new Date(record.timestamp).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' }))}</time><span class="entry-kind"> · ${TYPES[record.type]}</span><h3>${escape(title)}</h3>${content}<p>${escape(record.notes)}</p>${attachments}<div class="photo-actions"><button type="button" class="small-btn" data-action="edit" data-id="${record.id}">Editar</button><button type="button" class="small-btn danger" data-action="delete" data-id="${record.id}">Eliminar</button></div></article>`;
-    }).join('') : '<p class="help">Todavía no hay registros para esta selección. Guarda una comida o añade un registro.</p>';
+    const rows = entries.map(record => {
+      const date = new Date(record.timestamp);
+      const day = date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      return `<tr data-record-id="${record.id}"><td>${escape(day)}</td><td>${escape(time)}</td><td>${escape(TYPES[record.type])}</td><td><button type="button" class="small-btn" data-action="edit" data-id="${record.id}" aria-label="Editar ${escape(TYPES[record.type])} ${day} ${time}">Editar</button></td><td><button type="button" class="small-btn danger" data-action="delete" data-id="${record.id}" aria-label="Borrar ${escape(TYPES[record.type])} ${day} ${time}">Borrar</button></td></tr>`;
+    }).join('');
+    $('timeline').innerHTML = `<table class="diary-table records-table"><caption class="sr-only">Registros guardados</caption><thead><tr><th>Día</th><th>Hora</th><th>Tipo</th><th>Editar</th><th>Borrar</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Todavía no hay registros.</td></tr>'}</tbody></table>`;
   }
   function markersTable(markers) {
     return `<div class="diary-table-wrap"><table class="diary-table"><thead><tr><th>Parámetro</th><th>Valor</th><th>Unidad</th><th>Referencia del informe</th></tr></thead><tbody>${markers.map(marker => `<tr><td>${escape(marker.name)}</td><td>${escape(marker.value)}</td><td>${escape(marker.unit)}</td><td>${escape(marker.reference)}</td></tr>`).join('')}</tbody></table></div>`;
@@ -385,7 +387,7 @@
   function openEditor(record) {
     const dialog = $('entry-editor');
     let specific = '';
-    if (record.type === 'meal') specific = `${field('Descripción', 'edit-title', 'text', 'required maxlength="200"')}${field('Cantidad (g, opcional)', 'edit-grams', 'number', 'min="0.1" step="0.1"')}<label>Ingredientes<textarea id="edit-ingredients" maxlength="5000" rows="3"></textarea></label><p class="help">Cambiar la descripción, ingredientes o cantidad elimina la estimación anterior. Las fotos originales se conservan.</p>`;
+    if (record.type === 'meal') specific = `${field('Descripción', 'edit-title', 'text', 'required maxlength="5000"')}${field('Cantidad (g, opcional)', 'edit-grams', 'number', 'min="0.1" step="0.1"')}<label>Ingredientes<textarea id="edit-ingredients" maxlength="5000" rows="3"></textarea></label><p class="help">Cambiar la descripción, ingredientes o cantidad elimina la estimación anterior. Las fotos originales se conservan.</p>`;
     if (record.type === 'kreon') specific = capsuleFields('edit-caps') + `<label>Comida asociada<select id="edit-meal"><option value="">Sin asociar</option>${entries.filter(item => item.type === 'meal').map(item => `<option value="${item.id}">${escape(new Date(item.timestamp).toLocaleString('es-ES'))} · ${escape(item.title)}</option>`).join('')}</select></label>`;
     if (record.type === 'stool') specific = `<label>Bristol<select id="edit-bristol">${BRISTOL.map((label, i) => `<option value="${i + 1}">${label}</option>`).join('')}</select></label><label>Aspecto graso observado<select id="edit-greasy"><option value="unknown">No lo sé / no observado</option><option value="yes">Sí</option><option value="no">No</option></select></label>`;
     if (record.type === 'weight') specific = field('Peso (kg)', 'edit-kg', 'number', 'required min="0.1" step="0.1"');
@@ -402,6 +404,13 @@
       $('edit-add-marker').addEventListener('click', () => { try { addMarker($('edit-markers')); $('edit-reviewed').checked = false; } catch (error) { status(error.message, true); } });
       $('edit-markers').addEventListener('input', () => { $('edit-reviewed').checked = false; });
       $('edit-time').addEventListener('input', () => { $('edit-reviewed').checked = false; });
+    }
+    const originals = record.files || record.photos || [];
+    if (originals.length) {
+      const attachments = document.createElement('details');
+      attachments.innerHTML = `<summary>Archivos originales (${originals.length})</summary>${originals.map((file, index) => `<button type="button" class="small-btn" data-download-index="${index}">${escape(file.name)}</button>`).join('')}`;
+      attachments.addEventListener('click', event => { const button = event.target.closest('[data-download-index]'); if (button) downloadFile(originals[Number(button.dataset.downloadIndex)]); });
+      $('edit-form').append(attachments);
     }
     $('edit-cancel').addEventListener('click', () => dialog.close());
     $('edit-form').addEventListener('submit', e => {
@@ -486,6 +495,7 @@
     getMealAnalysis: () => mealAnalysis,
     saveReview: report => save({ ...newRecord('review', new Date().toISOString()), report }),
     prepareTakenDose(capsules) {
+      openNewRecord();
       $('record-type').value = 'kreon'; $('record-type').dispatchEvent(new Event('change'));
       for (const n of [10, 25, 35]) $(`record-caps-${n}`).value = capsules[n] || 0;
       $('record-caps-10').dispatchEvent(new Event('input'));

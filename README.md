@@ -110,3 +110,5 @@ La simulación del prototipo multiplica la grasa estimada por un factor editable
 La pestaña Comida muestra solo fotos, descripción, botón de análisis y resultados. El factor de simulación, la pauta prescrita y la referencia AEMPS se encuentran en Ajustes. Las fotos se añaden a la selección existente (hasta 4 / 20 MB) y se pueden quitar individualmente; cualquier cambio invalida el análisis anterior.
 
 El resultado de Kreon incluye «Cambiar UI por gramo de grasa», que abre y enfoca el parámetro en Ajustes. «Guardar UI/g» lo conserva para próximas simulaciones. La descripción es solo un campo de texto, sin etiqueta ni tarjeta exterior.
+
+La pestaña Registros muestra una tabla con día, hora y tipo, y acciones Editar/Borrar por fila. Un único botón Nuevo registro abre el formulario en una ventana. Copias de seguridad y evolución de peso permanecen en Ajustes; los archivos originales pueden descargarse al editar el registro.
