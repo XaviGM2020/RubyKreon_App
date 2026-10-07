@@ -432,25 +432,25 @@
   function mealContext() { return { description: $('meal-title').value, portionGrams: $('meal-grams').value, ingredients: $('meal-ingredients').value, kind: $('meal-kind').value }; }
   function buildMeals() {
     $('meal-time').value = localDateTime();
-    for (const id of ['meal-title', 'meal-grams', 'meal-ingredients']) $(id).addEventListener('input', () => { clearMealAnalysis(); $('results').style.display = 'none'; });
+    for (const id of ['meal-title', 'meal-grams', 'meal-ingredients']) $(id).addEventListener('input', () => { clearMealAnalysis(); $('results').style.display = 'none'; checkReady(); });
     $('meal-kind').addEventListener('change', () => { clearMealAnalysis(); $('results').style.display = 'none'; window.RubyAnalytics.renderCapsules(); });
     $('meal-time').addEventListener('input', () => window.RubyRegression.renderPrediction());
     $('meal-extra').addEventListener('change', async e => {
       const version = ++mealFilesVersion;
-      mealFilesReading = true; clearMealAnalysis(); extraPhotos = [];
+      mealFilesReading = true; clearMealAnalysis(); extraPhotos = []; checkReady();
       $('meal-extra-list').replaceChildren(); $('results').style.display = 'none';
       try {
         const files = await readFiles(e.target.files, 3);
         if (version !== mealFilesVersion) return;
         extraPhotos = files; $('meal-extra-list').innerHTML = attachmentList(extraPhotos, true);
       } catch (error) { if (version === mealFilesVersion) status(error.message, true); }
-      finally { if (version === mealFilesVersion) { mealFilesReading = false; ++revision; } }
+      finally { if (version === mealFilesVersion) { mealFilesReading = false; ++revision; checkReady(); } }
     });
     $('meal-extra-list').addEventListener('click', e => {
       const button = e.target.closest('[data-remove-photo]');
       if (!button) return;
       extraPhotos.splice(Number(button.dataset.removePhoto), 1); clearMealAnalysis();
-      $('results').style.display = 'none'; $('meal-extra-list').innerHTML = attachmentList(extraPhotos, true);
+      $('results').style.display = 'none'; $('meal-extra-list').innerHTML = attachmentList(extraPhotos, true); checkReady();
     });
     $('meal-form').addEventListener('submit', e => {
       e.preventDefault();

@@ -11,7 +11,7 @@ App instalable para comidas, tomas de Kreon, deposiciones Bristol y peso. **Anal
 
 ## Comidas y cápsulas
 
-La cámara del móvil conserva el archivo recibido sin filtros. Puedes guardar descripción, gramos, ingredientes, observaciones y hasta cuatro fotos. La IA estima el contenido nutricional usando fotos y contexto.
+La cámara del móvil conserva el archivo recibido sin filtros. Puedes guardar descripción, gramos, ingredientes, observaciones y hasta cuatro fotos. La IA estima el contenido nutricional a partir de la descripción y los ingredientes, con fotos opcionales. Sin fotos, indica cantidades y aceite añadido; si faltan cantidades, la IA debe explicar sus supuestos y reducir la confianza.
 
 Se han eliminado de Comida los parámetros de medicamento y la fórmula automática basada en UI/g de grasa. No se utilizan dosis de partida inventadas ni se transforma Bristol en una dosis.
 

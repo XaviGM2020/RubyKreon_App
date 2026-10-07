@@ -81,6 +81,16 @@ def run():
         page.get_by_role('button',name='Ajustes',exact=True).click()
         page.locator('#api-key-input').fill('sk-or-test-only'); page.get_by_role('button',name='Guardar',exact=True).click()
         page.get_by_role('button',name='Cerrar ajustes').click()
+        expect(page.locator('#analyze-btn')).to_be_disabled()
+        page.locator('#meal-title').fill('150 g de arroz cocido con 100 g de pollo y 10 g de aceite')
+        expect(page.locator('#analyze-btn')).to_be_enabled()
+        page.locator('#analyze-btn').click(); expect(page.locator('#results')).to_be_visible()
+        content=requests[-1]['messages'][0]['content']
+        assert len(content)==1 and content[0]['type']=='text'
+        assert '150 g de arroz cocido' in content[0]['text']
+        page.locator('#meal-title').fill(' ')
+        expect(page.locator('#analyze-btn')).to_be_disabled()
+        expect(page.locator('#results')).not_to_be_visible()
         page.locator('#file-input').set_input_files({'name':'plato.png','mimeType':'image/png','buffer':PNG})
         page.locator('#meal-title').fill('Arroz con pollo'); page.locator('#meal-grams').fill('250')
         page.locator('#meal-ingredients').fill('150 g de arroz, 100 g de pollo')
@@ -198,7 +208,7 @@ def run():
         second.locator('#import-diary').set_input_files({'name':'invalid.json','mimeType':'application/json','buffer':json.dumps(invalid).encode()})
         expect(second.locator('#diary-status')).to_have_class('error'); assert len(stored(second))==167
         second.evaluate('() => navigator.serviceWorker.ready'); second.reload(); second.wait_for_function('Boolean(navigator.serviceWorker.controller)')
-        assert second.evaluate("() => caches.open('rubykreon-v6').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
+        assert second.evaluate("() => caches.open('rubykreon-v7').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
         fresh.set_offline(True); second.reload(); second.locator('[data-screen="diary"]').click(); count(second,167); fresh.set_offline(False)
         assert second.evaluate('document.documentElement.scrollWidth <= innerWidth')
         assert not errors,errors
