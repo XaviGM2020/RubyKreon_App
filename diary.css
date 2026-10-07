@@ -85,3 +85,5 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .history-chart figcaption span { color: var(--muted); font-size: .75rem; font-weight: 400; }
 .history-chart svg { width: 100%; height: auto; display: block; margin-top: 12px; color: var(--muted); }
 .history-chart svg text { fill: currentColor; font-size: 18px; font-family: inherit; }
+
+#meal-analysis-status:empty { display: none; }

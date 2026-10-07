@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rubykreon-v15';
+const CACHE_NAME = 'rubykreon-v16';
 const ASSETS = [
   '/RubyKreon_App/',
   '/RubyKreon_App/index.html',
