@@ -99,8 +99,8 @@ def run():
         assert page.evaluate('RubyAnalytics.suggestForMeal()') is None
         expect(page.locator('#simulation-result')).to_contain_text('12.500 UI')
         expect(page.locator('#simulation-capsules')).to_contain_text('no tiene una combinación exacta')
-        page.get_by_role('button',name='Ajustes',exact=True).click()
-        page.locator('#simulation-settings > summary').click()
+        page.locator('#edit-simulation-factor').click()
+        expect(page.locator('#simulation-ui-per-gram')).to_be_focused()
         page.locator('#simulation-ui-per-gram').fill('2000')
         expect(page.locator('#simulation-result')).to_contain_text('25.000 UI')
         expect(page.locator('#simulation-capsules tbody tr')).to_have_count(1)
@@ -247,7 +247,7 @@ def run():
         second.locator('#import-diary').set_input_files({'name':'invalid.json','mimeType':'application/json','buffer':json.dumps(invalid).encode()})
         expect(second.locator('#diary-status')).to_have_class('error'); assert len(stored(second))==167
         second.evaluate('() => navigator.serviceWorker.ready'); second.reload(); second.wait_for_function('Boolean(navigator.serviceWorker.controller)')
-        assert second.evaluate("() => caches.open('rubykreon-v12').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
+        assert second.evaluate("() => caches.open('rubykreon-v13').then(c=>c.keys()).then(keys=>keys.some(k=>k.url.endsWith('/regression.js')))")
         fresh.set_offline(True); second.reload(); second.locator('[data-screen="diary"]').click(); count(second,167); fresh.set_offline(False)
         assert second.evaluate('document.documentElement.scrollWidth <= innerWidth')
         assert not errors,errors

@@ -100,6 +100,12 @@
     $('simulation-capsules').innerHTML = `<table><caption>Reparto matemático exacto con el menor número de cápsulas</caption><thead><tr><th>UI por cápsula</th><th>Número</th><th>Subtotal UI</th></tr></thead><tbody>${STRENGTHS.filter(n => capsules[n]).map(n => `<tr><td>${format(n * 1000)}</td><td>${capsules[n]}</td><td>${format(n * 1000 * capsules[n])}</td></tr>`).join('')}</tbody><tfoot><tr><th>Total simulado</th><td>${Object.values(capsules).reduce((sum, count) => sum + count, 0)}</td><td>${format(total)}</td></tr></tfoot></table>`;
   }
   function initSimulation() {
+    $('edit-simulation-factor').addEventListener('click', () => {
+      $('settings-dialog').showModal();
+      $('simulation-settings').open = true;
+      $('simulation-ui-per-gram').focus();
+      $('simulation-ui-per-gram').select();
+    });
     try {
       const stored = Number(localStorage.getItem(SIMULATION_KEY));
       if (Number.isSafeInteger(stored) && stored >= 1 && stored <= 100000) $('simulation-ui-per-gram').value = stored;

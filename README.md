@@ -108,3 +108,5 @@ El prototipo muestra tras cada análisis la referencia AEMPS de 25.000–80.000 
 La simulación del prototipo multiplica la grasa estimada por un factor editable, inicialmente 1.000 UI/g recuperado del código antiguo (no una pauta AEMPS). Guarda el factor bajo `rubykreon-demo-ui-per-gram`, separado de las prescripciones. Muestra total y reparto mínimo exacto en cápsulas enteras si es representable; no redondea, no aplica límites clínicos, no modifica pautas, no registra dosis y no alimenta la regresión ni la revisión clínica. No usar para decidir tomas reales.
 
 La pestaña Comida muestra solo fotos, descripción, botón de análisis y resultados. El factor de simulación, la pauta prescrita y la referencia AEMPS se encuentran en Ajustes. Las fotos se añaden a la selección existente (hasta 4 / 20 MB) y se pueden quitar individualmente; cualquier cambio invalida el análisis anterior.
+
+El resultado de Kreon incluye «Cambiar UI por gramo de grasa», que abre y enfoca el parámetro en Ajustes. «Guardar UI/g» lo conserva para próximas simulaciones. La descripción es solo un campo de texto, sin etiqueta ni tarjeta exterior.
