@@ -116,3 +116,5 @@ La pestaña Registros muestra una tabla con día, hora y tipo, y acciones Editar
 Analíticas contiene únicamente cuatro gráficas del historial: grasa estimada diaria, Kreon registrado diario, Bristol y peso. Las fechas usan el tiempo real de los registros; los días sin datos no se sustituyen por cero. Bristol se muestra como puntos ordinales. Los ajustes, revisión con IA y regresión permanecen bajo Ajustes → Herramientas del historial.
 
 La interfície està en català. Les noves anàlisis de la IA també es demanen en català; els textos i registres desats anteriorment es conserven.
+
+La descripció del menjar es pot dictar amb el botó de micròfon (reconeixement de veu del navegador, idioma ca-ES). El text s’afegeix al camp i es pot corregir abans d’analitzar-lo. No es desa cap fitxer d’àudio. Chrome pot processar la veu al seu servei remot i necessita connexió; si el navegador no ho admet, es pot fer servir el dictat del teclat.
