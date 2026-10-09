@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rubykreon-v21';
+const CACHE_NAME = 'rubykreon-v22';
 const ASSETS = [
   '/RubyKreon_App/',
   '/RubyKreon_App/index.html',
@@ -7,8 +7,8 @@ const ASSETS = [
   '/RubyKreon_App/regression.js',
   '/RubyKreon_App/diary.css',
   '/RubyKreon_App/manifest.json',
-  '/RubyKreon_App/icons/icon-192.png',
-  '/RubyKreon_App/icons/icon-512.png'
+  '/RubyKreon_App/icons/ruby-r-192.png',
+  '/RubyKreon_App/icons/ruby-r-512.png'
 ];
 
 // Install: cache core assets
