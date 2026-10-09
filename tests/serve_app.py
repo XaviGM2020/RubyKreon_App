@@ -6,7 +6,7 @@ import mimetypes
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = {'index.html', 'manifest.json', 'sw.js', 'diary.js', 'diary.css', 'analytics.js', 'regression.js',
-          'icons/icon-192.png', 'icons/icon-512.png', 'icon-192.png', 'icon-512.png'}
+          'icons/ruby-r-192.png', 'icons/ruby-r-512.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icon-192.png', 'icon-512.png'}
 
 
 class AppHandler(BaseHTTPRequestHandler):

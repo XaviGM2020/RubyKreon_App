@@ -4,8 +4,8 @@
   "description": "Registre d’àpats, preses de Kreon, Bristol i pes amb gràfiques de l’historial",
   "start_url": "/RubyKreon_App/",
   "display": "standalone",
-  "background_color": "#0f1117",
-  "theme_color": "#0f1117",
+  "background_color": "#071f22",
+  "theme_color": "#071f22",
   "orientation": "portrait-primary",
   "icons": [
     {

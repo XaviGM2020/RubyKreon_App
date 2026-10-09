@@ -15,7 +15,7 @@
 .diary-form input[type=checkbox] { width: auto; }
 .diary-form .check-label { flex-direction: row; align-items: flex-start; }
 .diary-form input:focus-visible, .diary-form textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
-.help { color: #a1a8b6; font-size: .8rem; line-height: 1.6; }
+.help { color: var(--muted); font-size: .8rem; line-height: 1.6; }
 .help a { color: var(--accent2); }
 .diary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .diary-filter { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
@@ -26,7 +26,7 @@
 .timeline { display: flex; flex-direction: column; gap: 14px; }
 .timeline article { border-left: 3px solid var(--accent2); padding: 14px 16px; background: var(--bg); border-radius: 0 10px 10px 0; overflow-wrap: anywhere; }
 .timeline h3 { font-size: .95rem; margin: 6px 0; }
-.timeline time, .timeline .entry-kind { font-size: .75rem; color: #a1a8b6; }
+.timeline time, .timeline .entry-kind { font-size: .75rem; color: var(--muted); }
 .timeline p { font-size: .85rem; line-height: 1.6; white-space: pre-wrap; }
 .timeline details { margin-top: 12px; }
 .timeline summary { cursor: pointer; font-size: .85rem; color: var(--accent2); }
@@ -39,13 +39,13 @@
 .lab-marker .diary-grid { grid-template-columns: 1fr 1fr; }
 .lab-marker-list { display: flex; flex-direction: column; gap: 10px; }
 .small-btn { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--surface); color: var(--text); cursor: pointer; font: inherit; font-size: .8rem; }
-.small-btn.danger { color: #fb923c; }
+.small-btn.danger { color: var(--warn); }
 button:disabled { opacity: .5; cursor: not-allowed; }
 #entry-editor, #settings-dialog, #record-dialog { margin: auto; width: min(94vw, 640px); max-height: 90vh; overflow-y: auto; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
 #entry-editor::backdrop, #settings-dialog::backdrop, #record-dialog::backdrop { background: #000b; }
 .analytics-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .analytics-metrics > div { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
-.analytics-metrics span, .analytics-metrics small { display: block; color: #a1a8b6; font-size: .75rem; }
+.analytics-metrics span, .analytics-metrics small { display: block; color: var(--muted); font-size: .75rem; }
 .analytics-metrics strong { display: block; font-size: 1.15rem; margin: 8px 0; }
 .analysis-narrative p, .analysis-narrative li { line-height: 1.6; font-size: .85rem; overflow-wrap: anywhere; }
 .analysis-narrative h3 { font-size: .95rem; margin: 16px 0 8px; }
@@ -87,3 +87,6 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .history-chart svg text { fill: currentColor; font-size: 18px; font-family: inherit; }
 
 #meal-analysis-status:empty { display: none; }
+
+.diary-tabs button[aria-pressed=true] { background: rgba(0,194,184,.12); }
+input[type=checkbox] { accent-color: var(--accent); }

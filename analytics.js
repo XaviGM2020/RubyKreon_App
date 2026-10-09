@@ -274,10 +274,10 @@
     const daily = field => Array.from(days, ([date, values]) => ({ time: new Date(date + 'T12:00:00').getTime(), value: values[field] })).filter(p => p.value != null);
     const events = (type, field) => entries.filter(r => r.type === type).map(r => ({ time: new Date(r.timestamp).getTime(), value: r[field] }));
     const charts = [
-      ['fat', 'Greix estimat per dia', 'g', daily('fat'), '#20c9df'],
-      ['kreon', 'Kreon registrat per dia', 'UI de lipasa', daily('kreon'), '#47d7a1'],
-      ['bristol', 'Deposicions · Bristol', 'Tipus 1–7', events('stool', 'bristol'), '#e6b86a'],
-      ['weight', 'Pes', 'kg', events('weight', 'kg'), '#ac9bff']
+      ['fat', 'Greix estimat per dia', 'g', daily('fat'), '#00c2b8'],
+      ['kreon', 'Kreon registrat per dia', 'UI de lipasa', daily('kreon'), '#63e5dc'],
+      ['bristol', 'Deposicions · Bristol', 'Tipus 1–7', events('stool', 'bristol'), '#b0eee8'],
+      ['weight', 'Pes', 'kg', events('weight', 'kg'), '#f4fffd']
     ];
     $('lab-screen').innerHTML = charts.map(([id, title, unit, points, color]) => {
       points.sort((a, b) => a.time - b.time);
